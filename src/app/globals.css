@@ -7,17 +7,31 @@
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+
+/* Add more styles as needed */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
+
+
+
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(270deg, #ff7676, #f54ea2, #a94cf2, #4a91ff, #3cf0e3);
+  animation: gradientShift 20s ease infinite;
+  background-size: 800% 800%;
+
 }
 
 @layer utilities {
@@ -25,3 +39,13 @@ body {
     text-wrap: balance;
   }
 }
+
+.mainC{
+  border-radius: 18px;
+  padding: 12px; /* Reduced padding */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+}
+
+
+

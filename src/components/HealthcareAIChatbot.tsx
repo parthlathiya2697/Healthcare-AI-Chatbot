@@ -130,7 +130,7 @@ export default function HealthcareAIChatbot() {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full mainC">
       <CardHeader>
         <CardTitle>AI Health Assistant</CardTitle>
         <CardDescription>Get first aid advice, find nearby hospitals, and connect with doctors</CardDescription>
