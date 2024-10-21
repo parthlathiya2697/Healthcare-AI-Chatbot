@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "../components/ui/input"
@@ -24,9 +24,12 @@ const doctors = [
 ]
 
 export default function HealthcareAIChatbot() {
-  const [messages, setMessages] = useState([
+  const [chatMessages, setChatMessages] = useState([
     { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }
   ])
+  const [firstAidMessages, setFirstAidMessages] = useState([])
+  const [hospitalMessages, setHospitalMessages] = useState([])
+  const [doctorMessages, setDoctorMessages] = useState([])
   const [input, setInput] = useState('')
   const [isRecording, setIsRecording] = useState(false)
   const [hospitalSort, setHospitalSort] = useState('distance')
@@ -34,24 +37,55 @@ export default function HealthcareAIChatbot() {
   const [selectedDoctor, setSelectedDoctor] = useState(null)
   const fileInputRef = useRef(null)
 
+
+  // use effect for firstAidMessages
+  useEffect(() => {
+    console.log(firstAidMessages)
+  }, [firstAidMessages])
+
   const handleSendMessage = (e: React.FormEvent, tabContent: string = '') => {
     e.preventDefault()
     if (input.trim()) {
-      setMessages([...messages, { role: 'user', content: input }])
-      // Simulate AI response (in a real app, this would call an API)
-      setTimeout(() => {
-        let response = "I understand your concern. Based on the information you've provided, here's my advice: "
-        if (tabContent === 'firstAid') {
-          response += "For minor cuts, clean the wound with soap and water, apply antibiotic ointment, and cover with a sterile bandage. If bleeding is severe or doesn't stop after 10 minutes of direct pressure, seek immediate medical attention."
-        } else if (tabContent === 'doctors') {
-          response += "Dr. Jane Smith, our emergency medicine specialist, is available today at 2 PM and 3 PM. She has excellent reviews for her expertise in handling urgent cases."
-        } else if (tabContent === 'hospitals') {
-          response += "The nearest open hospital is Central Hospital, 2.5 km away. It has high ratings for staff behavior and treatment quality. Would you like more details about this hospital?"
-        } else {
-          response += "If you're experiencing any medical symptoms, please describe them in detail. I can provide general advice or direct you to appropriate resources."
-        }
-        setMessages(prev => [...prev, { role: 'assistant', content: response }])
-      }, 1000)
+      console.log("input: ", input, ", tabContent: ", tabContent)
+      if (tabContent === 'chat') {
+        setChatMessages([...chatMessages, { role: 'user', content: input }])
+        // Simulate AI response (in a real app, this would call an API)
+        setTimeout(() => {
+          let response = "I understand your concern. Based on the information you've provided, here's my advice: If you're experiencing any medical symptoms, please describe them in detail. I can provide general advice or direct you to appropriate resources."
+          setChatMessages(prev => [...prev, { role: 'assistant', content: response }])
+        }, 1000)
+      }
+
+      if (tabContent == 'firstAid') {
+        console.log("firstAidMessages: matched",)
+        setFirstAidMessages([...firstAidMessages, { role: 'user', content: input }])
+        // Simulate AI response (in a real app, this would call an API)
+        setTimeout(() => {
+          let response = "I understand your concern. Based on the information you've provided, here's my advice: For minor cuts, clean the wound with soap and water, apply antibiotic ointment, and cover with a sterile bandage. If bleeding is severe or doesn't stop after 10 minutes of direct pressure, seek immediate medical attention."
+          setFirstAidMessages(prev => [...prev, { role: 'assistant', content: response }])
+        }, 1000)
+      }
+
+      if (tabContent == 'hospitals') {
+        console.log("hospitalMessages: matched",)
+        setHospitalMessages([...hospitalMessages, { role: 'user', content: input }])
+        // Simulate AI response (in a real app, this would call an API)
+        setTimeout(() => {
+          let response = "I understand your concern. Based on the information you've provided, here's my advice: The nearest open hospital is Central Hospital, 2.5 km away. It has high ratings for staff behavior and treatment quality. Would you like more details about this hospital?"
+          setHospitalMessages(prev => [...prev, { role: 'assistant', content: response }])
+        }, 1000)
+      }
+
+      if (tabContent == 'doctors') {
+        console.log("doctorMessages: matched",)
+        setDoctorMessages([...doctorMessages, { role: 'user', content: input }])
+        // Simulate AI response (in a real app, this would call an API)
+        setTimeout(() => {
+          let response = "I understand your concern. Based on the information you've provided, here's my advice: Dr. Jane Smith, our emergency medicine specialist, is available today at 2 PM and 3 PM. She has excellent reviews for her expertise in handling urgent cases."
+          setDoctorMessages(prev => [...prev, { role: 'assistant', content: response }])
+        }, 1000)
+      }
+
       setInput('')
     }
   }
@@ -73,9 +107,9 @@ export default function HealthcareAIChatbot() {
     const file = event.target.files?.[0]
     if (file) {
       // Simulate image upload and AI analysis
-      setMessages([...messages, { role: 'user', content: `Uploaded image: ${file.name}` }])
+      setChatMessages([...messages, { role: 'user', content: `Uploaded image: ${file.name}` }])
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: "I've analyzed the image you sent. It appears to show symptoms of a mild skin rash. Based on the visible symptoms, it could be contact dermatitis. I recommend applying a cool compress and using an over-the-counter hydrocortisone cream. If the rash persists or worsens after 48 hours, please consult a dermatologist." }])
+        setChatMessages(prev => [...prev, { role: 'assistant', content: "I've analyzed the image you sent. It appears to show symptoms of a mild skin rash. Based on the visible symptoms, it could be contact dermatitis. I recommend applying a cool compress and using an over-the-counter hydrocortisone cream. If the rash persists or worsens after 48 hours, please consult a dermatologist." }])
       }, 1500)
     }
   }
@@ -96,7 +130,7 @@ export default function HealthcareAIChatbot() {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>AI Health Assistant</CardTitle>
         <CardDescription>Get first aid advice, find nearby hospitals, and connect with doctors</CardDescription>
@@ -111,7 +145,7 @@ export default function HealthcareAIChatbot() {
           </TabsList>
           <TabsContent value="chat">
             <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-              {messages.map((msg, index) => (
+              {chatMessages.map((msg, index) => (
                 <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                   <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
                     {msg.content}
@@ -119,11 +153,11 @@ export default function HealthcareAIChatbot() {
                 </div>
               ))}
             </ScrollArea>
-            <form onSubmit={handleSendMessage} className="flex items-center mt-4">
-              <Input 
-                type="text" 
-                placeholder="Type your message..." 
-                value={input} 
+            <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
+              <Input
+                type="text"
+                placeholder="Type your message..."
+                value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="flex-grow mr-2"
               />
@@ -159,7 +193,7 @@ export default function HealthcareAIChatbot() {
                 <ul className="list-disc pl-5 mt-2">
                   <li>Cuts and Scrapes: Clean the wound with soap and water, apply antibiotic ointment, and cover with a sterile bandage.</li>
                   <li>Burns: Run cool water over the burn for at least 10 minutes. Cover with a clean, dry dressing.</li>
-                  
+
                   <li>Sprains: Remember RICE - Rest, Ice, Compression, and Elevation.</li>
                   <li>Choking: Perform the Heimlich maneuver if the person can't cough, speak, or breathe.</li>
                 </ul>
@@ -167,10 +201,10 @@ export default function HealthcareAIChatbot() {
               </CardContent>
               <CardFooter>
                 <form onSubmit={(e) => handleSendMessage(e, 'firstAid')} className="flex items-center w-full mt-4">
-                  <Input 
-                    type="text" 
-                    placeholder="Ask about first aid..." 
-                    value={input} 
+                  <Input
+                    type="text"
+                    placeholder="Ask about first aid..."
+                    value={input}
                     onChange={(e) => setInput(e.target.value)}
                     className="flex-grow mr-2"
                   />
@@ -178,6 +212,21 @@ export default function HealthcareAIChatbot() {
                 </form>
               </CardFooter>
             </Card>
+
+            {firstAidMessages.length > 0 && (
+              <>
+                <br />Your chat gets displayed below<br />
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">{firstAidMessages.map((msg, index) => (
+                  <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                    <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                </ScrollArea>
+              </>
+            )
+            }
           </TabsContent>
           <TabsContent value="hospitals">
             <Card>
@@ -233,10 +282,10 @@ export default function HealthcareAIChatbot() {
               </CardContent>
               <CardFooter>
                 <form onSubmit={(e) => handleSendMessage(e, 'hospitals')} className="flex items-center w-full mt-4">
-                  <Input 
-                    type="text" 
-                    placeholder="Ask about hospitals..." 
-                    value={input} 
+                  <Input
+                    type="text"
+                    placeholder="Ask about hospitals..."
+                    value={input}
                     onChange={(e) => setInput(e.target.value)}
                     className="flex-grow mr-2"
                   />
@@ -244,6 +293,22 @@ export default function HealthcareAIChatbot() {
                 </form>
               </CardFooter>
             </Card>
+            {
+              hospitalMessages.length > 0 && (
+                <>
+                  <br />Your chat gets displayed below<br />
+                  <ScrollArea className="h-[400px] w-full rounded-md border p-4">{hospitalMessages.map((msg, index) => (
+                    <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                      <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  </ScrollArea>
+                </>
+              )
+            }
+
           </TabsContent>
           <TabsContent value="doctors">
             <Card>
@@ -260,8 +325,8 @@ export default function HealthcareAIChatbot() {
                             <CardTitle>{doctor.name}</CardTitle>
                             <CardDescription>{doctor.specialty}</CardDescription>
                           </div>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setSelectedDoctor(selectedDoctor?.id === doctor.id ? null : doctor)}
                           >
@@ -285,11 +350,10 @@ export default function HealthcareAIChatbot() {
                               {Array.from({ length: 12 }, (_, i) => i + 8).map(hour => (
                                 <div
                                   key={hour}
-                                  className={`w-6 h-6 flex items-center justify-center text-xs ${
-                                    doctor.availability.includes(hour)
-                                      ? 'bg-green-500 text-white'
-                                      : 'bg-gray-200 text-gray-500'
-                                  }`}
+                                  className={`w-6 h-6 flex items-center justify-center text-xs ${doctor.availability.includes(hour)
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-gray-200 text-gray-500'
+                                    }`}
                                 >
                                   {hour}
                                 </div>
@@ -311,10 +375,10 @@ export default function HealthcareAIChatbot() {
               </CardContent>
               <CardFooter>
                 <form onSubmit={(e) => handleSendMessage(e, 'doctors')} className="flex items-center w-full mt-4">
-                  <Input 
-                    type="text" 
-                    placeholder="Ask about doctors..." 
-                    value={input} 
+                  <Input
+                    type="text"
+                    placeholder="Ask about doctors..."
+                    value={input}
                     onChange={(e) => setInput(e.target.value)}
                     className="flex-grow mr-2"
                   />
@@ -322,6 +386,21 @@ export default function HealthcareAIChatbot() {
                 </form>
               </CardFooter>
             </Card>
+            {doctorMessages.length > 0 && (
+              <>
+                <br />Your chat gets displayed below<br />
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">{doctorMessages.map((msg, index) => (
+                  <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                    <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))
+
+                } </ScrollArea>
+              </>
+            )
+            }
           </TabsContent>
         </Tabs>
       </CardContent>
