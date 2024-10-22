@@ -15,11 +15,14 @@ import { CircularProgress } from '@mui/material';
 export default function HealthcareAIChatbot() {
 
   const [chatMessages, setChatMessages] = useState([
-{ role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" } ])
+    { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }])
   const [firstAidMessages, setFirstAidMessages] = useState([])
   const [hospitalMessages, setHospitalMessages] = useState([])
   const [doctorMessages, setDoctorMessages] = useState([])
-  const [input, setInput] = useState('')
+  const [chatInput, setChatInput] = useState('');
+  const [firstAidInput, setFirstAidInput] = useState('');
+  const [hospitalInput, setHospitalInput] = useState('');
+  const [doctorInput, setDoctorInput] = useState('');
   const [isRecording, setIsRecording] = useState(false)
   const [hospitalSort, setHospitalSort] = useState('distance')
   const [sortOrder, setSortOrder] = useState('asc')
@@ -191,7 +194,7 @@ export default function HealthcareAIChatbot() {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  const handleAudioInput = () => {
+  function handleAudioInputForTab(tabContent: string) {
     if (!('webkitSpeechRecognition' in window)) {
       console.error("Speech recognition not supported in this browser.");
       return;
@@ -215,8 +218,24 @@ export default function HealthcareAIChatbot() {
 
     recognitionRef.current.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      setInput(transcript);
       console.log("Transcription: ", transcript);
+
+      switch (tabContent) {
+        case 'chat':
+          setChatInput(transcript);
+          break;
+        case 'firstAid':
+          setFirstAidInput(transcript);
+          break;
+        case 'hospitals':
+          setHospitalInput(transcript);
+          break;
+        case 'doctors':
+          setDoctorInput(transcript);
+          break;
+        default:
+          break;
+      }
     };
 
     recognitionRef.current.onerror = (event) => {
@@ -229,7 +248,8 @@ export default function HealthcareAIChatbot() {
     };
 
     recognitionRef.current.start();
-  };
+  }
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -303,8 +323,8 @@ export default function HealthcareAIChatbot() {
                   <Input
                     type="text"
                     placeholder="Type your message..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
                     className="flex-grow"
                   />
                 </div>
@@ -319,7 +339,7 @@ export default function HealthcareAIChatbot() {
                   <ImageIcon className="w-4 h-4" />
                   <span className="sr-only">Upload image</span>
                 </Button>
-                <Button type="button" onClick={handleAudioInput} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
+                <Button type="button" onClick={() => handleAudioInputForTab('chat')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                   <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
                   <span className="sr-only">Record audio</span>
                 </Button>
@@ -351,10 +371,14 @@ export default function HealthcareAIChatbot() {
                     <Input
                       type="text"
                       placeholder="Ask about first aid..."
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      value={firstAidInput}
+                      onChange={(e) => setFirstAidInput(e.target.value)}
                       className="flex-grow mr-2"
                     />
+                    <Button type="button" onClick={() => handleAudioInputForTab('firstAid')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
+                      <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                      <span className="sr-only">Record audio</span>
+                    </Button>
                     <Button type="submit">Ask</Button>
                   </form>
                 </CardFooter>
@@ -436,12 +460,18 @@ export default function HealthcareAIChatbot() {
                       <Input
                         type="text"
                         placeholder="Ask about hospitals..."
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        value={hospitalInput}
+                        onChange={(e) => setHospitalInput(e.target.value)}
                         className="flex-grow mr-2"
                       />
+
+                      <Button type="button" onClick={() => handleAudioInputForTab('hospitals')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
+                        <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                        <span className="sr-only">Record audio</span>
+                      </Button>
                       <Button type="submit">Ask</Button>
                     </form>
+
                   </CardFooter>
                 </Card>
               )}
@@ -533,10 +563,14 @@ export default function HealthcareAIChatbot() {
                       <Input
                         type="text"
                         placeholder="Ask about doctors..."
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        value={doctorInput}
+                        onChange={(e) => setDoctorInput(e.target.value)}
                         className="flex-grow mr-2"
                       />
+                      <Button type="button" onClick={() => handleAudioInputForTab('doctors')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
+                        <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                        <span className="sr-only">Record audio</span>
+                      </Button>
                       <Button type="submit">Ask</Button>
                     </form>
                   </CardFooter>
