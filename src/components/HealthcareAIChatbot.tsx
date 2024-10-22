@@ -11,7 +11,6 @@ import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image
 import { Badge } from "../components/ui/badge"
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
-import { stringify } from 'querystring'
 
 
 export default function HealthcareAIChatbot() {
@@ -51,7 +50,6 @@ export default function HealthcareAIChatbot() {
     })
       .then(response => {
         setHospitals(response.data);
-        console.log("JSON.stringify(response.data): ", JSON.stringify(response.data))
         setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
         setIsLoadingHospitals(false);
       })
@@ -69,7 +67,6 @@ export default function HealthcareAIChatbot() {
     })
       .then(response => {
         setDoctors(response.data);
-        console.log("JSON.stringify(doctors): ", JSON.stringify(response.data));
         setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
         setIsLoadingDoctors(false);
       })
