@@ -12,12 +12,10 @@ import { Badge } from "../components/ui/badge"
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
 
-
 export default function HealthcareAIChatbot() {
 
   const [chatMessages, setChatMessages] = useState([
-    { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }
-  ])
+{ role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" } ])
   const [firstAidMessages, setFirstAidMessages] = useState([])
   const [hospitalMessages, setHospitalMessages] = useState([])
   const [doctorMessages, setDoctorMessages] = useState([])
@@ -37,6 +35,8 @@ export default function HealthcareAIChatbot() {
   const [firstAidReference, setFirstAidReference] = useState('');
   const [hospitalReference, setHospitalReference] = useState('');
   const [doctorReference, setDoctorReference] = useState('');
+
+  const [base64Image, setBase64Image] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -188,29 +188,66 @@ export default function HealthcareAIChatbot() {
     }
   }
 
-  const handleAudioInput = () => {
-    setIsRecording(true)
-    // Simulating audio recording and transcription
-    setTimeout(() => {
-      setIsRecording(false)
-      setInput("I have a severe headache and feeling dizzy.")
-    }, 3000)
-  }
 
-  const handleImageUpload = () => {
-    fileInputRef.current?.click()
-  }
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const handleAudioInput = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      console.error("Speech recognition not supported in this browser.");
+      return;
+    }
+
+    if (isRecording) {
+      console.log("Stopping voice recognition.");
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognitionRef.current.lang = 'en-US';
+    recognitionRef.current.interimResults = false;
+    recognitionRef.current.maxAlternatives = 1;
+
+    recognitionRef.current.onstart = () => {
+      setIsRecording(true);
+      console.log("Voice recognition started. Speak into the microphone.");
+    };
+
+    recognitionRef.current.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      console.log("Transcription: ", transcript);
+    };
+
+    recognitionRef.current.onerror = (event) => {
+      console.error("Speech recognition error: ", event.error);
+    };
+
+    recognitionRef.current.onend = () => {
+      setIsRecording(false);
+      console.log("Voice recognition ended.");
+    };
+
+    recognitionRef.current.start();
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBase64Image(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
       // Simulate image upload and AI analysis
-      setChatMessages([...messages, { role: 'user', content: `Uploaded image: ${file.name}` }])
-      setTimeout(() => {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: "I've analyzed the image you sent. It appears to show symptoms of a mild skin rash. Based on the visible symptoms, it could be contact dermatitis. I recommend applying a cool compress and using an over-the-counter hydrocortisone cream. If the rash persists or worsens after 48 hours, please consult a dermatologist." }])
-      }, 1500)
+      setChatMessages([...chatMessages, { role: 'user', content: `Uploaded image: ${file.name}` }]);
     }
-  }
+  };
+
+  const discardImage = () => {
+    setBase64Image(null);
+  };
 
   const playAudioGuide = () => {
     // In a real application, this would trigger audio playback
@@ -254,13 +291,23 @@ export default function HealthcareAIChatbot() {
                 ))}
               </ScrollArea>
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
-                <Input
-                  type="text"
-                  placeholder="Type your message..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="flex-grow mr-2"
-                />
+                <div className="flex items-center w-full border rounded p-2">
+                  {base64Image && (
+                    <div className="flex items-center mr-2">
+                      <img src={base64Image} alt="Selected" className="w-8 h-8 object-cover rounded" />
+                      <Button type="button" onClick={discardImage} className="ml-1">
+                        ✖
+                      </Button>
+                    </div>
+                  )}
+                  <Input
+                    type="text"
+                    placeholder="Type your message..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    className="flex-grow"
+                  />
+                </div>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -268,16 +315,18 @@ export default function HealthcareAIChatbot() {
                   onChange={handleFileChange}
                   accept="image/*"
                 />
-                <Button type="button" onClick={handleImageUpload} className="mr-2">
+                <Button type="button" onClick={() => fileInputRef.current?.click()} className="ml-2">
                   <ImageIcon className="w-4 h-4" />
                   <span className="sr-only">Upload image</span>
                 </Button>
-                <Button type="button" onClick={handleAudioInput} className="mr-2">
+                <Button type="button" onClick={handleAudioInput} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                   <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
                   <span className="sr-only">Record audio</span>
                 </Button>
-                <Button type="submit">Send</Button>
+                <Button type="submit" className="ml-2">Send</Button>
               </form>
+
+
             </TabsContent>
             <TabsContent value="firstAid">
               <Card>
