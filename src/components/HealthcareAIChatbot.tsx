@@ -41,6 +41,11 @@ export default function HealthcareAIChatbot() {
 
   const [base64Image, setBase64Image] = useState<string | null>(null);
 
+  const [isLoadingChat, setIsLoadingChat] = useState(false)
+  const [isLoadingChatFirstAid, setIsLoadingChatFirstAid] = useState(false)
+  const [isLoadingChatHospitals, setIsLoadingChatHospitals] = useState(false)
+  const [isLoadingChatDoctors, setIsLoadingChatDoctors] = useState(false)
+
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
@@ -93,101 +98,126 @@ export default function HealthcareAIChatbot() {
 
 
   function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
+    console.log("tabContent: ", tabContent);
+    console.log("tabContent === 'firstAid': ", tabContent === 'firstAid');
     e.preventDefault();
-    if (input.trim()) {
-      console.log("input: ", input, ", tabContent: ", tabContent);
+    // Chat tab
+    if (tabContent === 'chat' && (chatInput.trim() !== '' || base64Image)) {
+      setChatMessages([...chatMessages, { role: 'user', content: chatInput }]);
+      setIsLoadingChat(true); // Set loading to true when sending message
 
-      // Chat tab
-      if (tabContent === 'chat') {
-        setChatMessages([...chatMessages, { role: 'user', content: input }]);
+      // Call the chat API endpoint
+      axios.post('http://localhost:8000/api/chat/', {
+        query: chatInput,
+        chat_messages: chatMessages,
+        image: base64Image // Include base64Image if present
+      }, {
+        headers: {
+          'X-CSRFToken': getCSRFToken() // Include CSRF token in the request headers
+        }
+      })
+        .then(response => {
+          const responseMessage = response.data.response;
+          setChatMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
 
-        // Call the chat API endpoint
-        axios.post('http://localhost:8000/api/chat/', {
-          query: input,
-          chat_messages: chatMessages
-        }, {
-          headers: {
-            'X-CSRFToken': getCSRFToken() // Include CSRF token in the request headers
-          }
+          // Clear the input and image after sending
+          setChatInput('');
+          setBase64Image(null);
+          setIsLoadingChat(false); // Set loading to false after receiving response
+
         })
-          .then(response => {
-            const responseMessage = response.data.response;
-            setChatMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-
-          })
-          .catch(error => {
-            console.error('Error fetching first aid suggestions:', error);
-            setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the first aid suggestions at the moment." }]);
-          });
-      }
+        .catch(error => {
+          console.error('Error fetching chat response:', error);
+          setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the chat response at the moment." }]);
+          setIsLoadingChat(false); // Set loading to false on error
+        });
+    }
 
 
-      // First aid tab
-      if (tabContent === 'firstAid') {
-        console.log("firstAidMessages: matched, input : ", input);
-        setFirstAidMessages([...firstAidMessages, { role: 'user', content: input }]);
+    // First aid tab
+    if (tabContent === 'firstAid') {
+      console.log("firstAidMessages: matched");
+      setFirstAidMessages([...firstAidMessages, { role: 'user', content: firstAidInput }]);
+      setIsLoadingChatFirstAid(true); // Set loading to true when sending message
+      console.log("firstAidMessages: matched");
+      // Call the first aid suggestions API with JSON input
+      axios.post('http://localhost:8000/api/first-aid-suggestions/', {
+        query: firstAidInput,
+        reference_content: firstAidReference,
+        chat_messages: firstAidMessages
+      })
+        .then(response => {
+          const responseMessage = response.data.suggestion;
+          setFirstAidMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
 
-        // Call the first aid suggestions API with JSON input
-        axios.post('http://localhost:8000/api/first-aid-suggestions/', {
-          query: input,
-          reference_content: firstAidReference,
-          chat_messages: firstAidMessages
+          // Clear the input and image after sending
+          setFirstAidInput('');
+          setIsLoadingChatFirstAid(false); // Set loading to false after receiving response
+
         })
-          .then(response => {
-            const responseMessage = response.data.suggestion;
-            setFirstAidMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-          })
-          .catch(error => {
-            console.error('Error fetching first aid suggestions:', error);
-            setFirstAidMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the first aid suggestions at the moment." }]);
-          });
-      }
+        .catch(error => {
+          console.error('Error fetching first aid suggestions:', error);
+          setFirstAidMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the first aid suggestions at the moment." }]);
+          setIsLoadingChatFirstAid(false); // Set loading to false on error
+        });
+    }
 
 
-      // Hospitals tab
-      if (tabContent === 'hospitals') {
-        console.log("hospitalMessages: matched");
-        setHospitalMessages([...hospitalMessages, { role: 'user', content: input }]);
+    // Hospitals tab
+    if (tabContent === 'hospitals') {
+      console.log("hospitalMessages: matched");
+      setHospitalMessages([...hospitalMessages, { role: 'user', content: hospitalInput }]);
+      setIsLoadingChatHospitals(true); // Set loading to true when sending message
 
-        // Call the hospitals API with JSON input
-        axios.post('http://localhost:8000/api/hospitals_suggestions/', {
-          query: input,
-          reference_content: hospitalReference,
-          chat_messages: hospitalMessages
+      // Call the hospitals API with JSON input
+      axios.post('http://localhost:8000/api/hospitals_suggestions/', {
+        query: hospitalInput,
+        reference_content: hospitalReference,
+        chat_messages: hospitalMessages
+      })
+        .then(response => {
+          const responseMessage = response.data.suggestion; // Adjust based on actual response structure
+          setHospitalMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+
+          // Clear the input and image after sending
+          setHospitalInput('');
+          setIsLoadingChatHospitals(false); // Set loading to false after receiving response
+
         })
-          .then(response => {
-            const responseMessage = response.data.suggestion; // Adjust based on actual response structure
-            setHospitalMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-          })
-          .catch(error => {
-            console.error('Error fetching hospital information:', error);
-            setHospitalMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch hospital information at the moment." }]);
-          });
-      }
+        .catch(error => {
+          console.error('Error fetching hospital information:', error);
+          setHospitalMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch hospital information at the moment." }]);
+          setIsLoadingChatHospitals(false); // Set loading to false on error
+        });
+    }
 
 
-      // Doctors tab
-      if (tabContent === 'doctors') {
-        console.log("doctorMessages: matched");
-        setDoctorMessages([...doctorMessages, { role: 'user', content: input }]);
+    // Doctors tab
+    if (tabContent === 'doctors') {
+      console.log("doctorMessages: matched");
+      setDoctorMessages([...doctorMessages, { role: 'user', content: doctorInput }]);
+      setIsLoadingChatDoctors(true); // Set loading to true when sending message
 
-        // Call the doctors API with JSON input
-        axios.post('http://localhost:8000/api/doctors_suggestions/', {
-          query: input,
-          reference_content: doctorReference,
-          chat_messages: doctorMessages
+      // Call the doctors API with JSON input
+      axios.post('http://localhost:8000/api/doctors_suggestions/', {
+        query: doctorInput,
+        reference_content: doctorReference,
+        chat_messages: doctorMessages
+      })
+        .then(response => {
+          const responseMessage = response.data.suggestion; // Adjust based on actual response structure
+          setDoctorMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+
+          // Clear the input and image after sending
+          setDoctorInput('');
+          setIsLoadingChatDoctors(false); // Set loading to false after receiving response
+
         })
-          .then(response => {
-            const responseMessage = response.data.suggestion; // Adjust based on actual response structure
-            setDoctorMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-          })
-          .catch(error => {
-            console.error('Error fetching doctor information:', error);
-            setDoctorMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch doctor information at the moment." }]);
-          });
-      }
-
-      setInput('');
+        .catch(error => {
+          console.error('Error fetching doctor information:', error);
+          setDoctorMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch doctor information at the moment." }]);
+          setIsLoadingChatDoctors(false); // Set loading to false on error
+        });
     }
   }
 
@@ -259,9 +289,6 @@ export default function HealthcareAIChatbot() {
         setBase64Image(reader.result as string);
       };
       reader.readAsDataURL(file);
-
-      // Simulate image upload and AI analysis
-      setChatMessages([...chatMessages, { role: 'user', content: `Uploaded image: ${file.name}` }]);
     }
   };
 
@@ -320,13 +347,19 @@ export default function HealthcareAIChatbot() {
                       </Button>
                     </div>
                   )}
-                  <Input
-                    type="text"
-                    placeholder="Type your message..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    className="flex-grow"
-                  />
+                  {isLoadingChat ? (
+                    <div className="flex-grow flex justify-center items-center">
+                      <CircularProgress size={24} /> {/* Use a loading spinner */}
+                    </div>
+                  ) : (
+                    <Input
+                      type="text"
+                      placeholder="Type your message..."
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      className="flex-grow"
+                    />
+                  )}
                 </div>
                 <input
                   type="file"
@@ -368,13 +401,17 @@ export default function HealthcareAIChatbot() {
                 </CardContent>
                 <CardFooter>
                   <form onSubmit={(e) => handleSendMessage(e, 'firstAid')} className="flex items-center w-full mt-4">
-                    <Input
+                    {isLoadingChatFirstAid ? (
+                      <div className="flex-grow flex justify-center items-center">
+                        <CircularProgress size={24} /> {/* Use a loading spinner */}
+                      </div>
+                    ) : (<Input
                       type="text"
                       placeholder="Ask about first aid..."
                       value={firstAidInput}
                       onChange={(e) => setFirstAidInput(e.target.value)}
                       className="flex-grow mr-2"
-                    />
+                    />)}
                     <Button type="button" onClick={() => handleAudioInputForTab('firstAid')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                       <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
                       <span className="sr-only">Record audio</span>
@@ -457,13 +494,17 @@ export default function HealthcareAIChatbot() {
                   </CardContent>
                   <CardFooter>
                     <form onSubmit={(e) => handleSendMessage(e, 'hospitals')} className="flex items-center w-full mt-4">
-                      <Input
+                      {isLoadingChatHospitals ? (
+                        <div className="flex-grow flex justify-center items-center">
+                          <CircularProgress size={24} /> {/* Use a loading spinner */}
+                        </div>
+                      ) : (<Input
                         type="text"
                         placeholder="Ask about hospitals..."
                         value={hospitalInput}
                         onChange={(e) => setHospitalInput(e.target.value)}
                         className="flex-grow mr-2"
-                      />
+                      />)}
 
                       <Button type="button" onClick={() => handleAudioInputForTab('hospitals')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                         <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
@@ -560,13 +601,17 @@ export default function HealthcareAIChatbot() {
                   </CardContent>
                   <CardFooter>
                     <form onSubmit={(e) => handleSendMessage(e, 'doctors')} className="flex items-center w-full mt-4">
-                      <Input
+                      {isLoadingChatDoctors ? (
+                        <div className="flex-grow flex justify-center items-center">
+                          <CircularProgress size={24} /> {/* Use a loading spinner */}
+                        </div>
+                      ) : (<Input
                         type="text"
                         placeholder="Ask about doctors..."
                         value={doctorInput}
                         onChange={(e) => setDoctorInput(e.target.value)}
                         className="flex-grow mr-2"
-                      />
+                      />)}
                       <Button type="button" onClick={() => handleAudioInputForTab('doctors')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                         <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
                         <span className="sr-only">Record audio</span>

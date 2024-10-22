@@ -18,17 +18,51 @@ def chat(request):
         data = json.loads(request.body)
         user_input = data.get('query', '')
         chat_messages = data.get('chat_messages', [])
+        image_data = data.get('image', None)  # Get the image if present
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
+    # Prepare the system message
+    system_message = "You are a helpful assistant. User Chat till this point: " + str(chat_messages)
+
     # Create a chat completion request
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant. User Chat till this point : " + str(chat_messages)},
-            {"role": "user", "content": user_input}
-        ]
-    )
+    if image_data and user_input:
+        print("Image and user input")
+        completion = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"Analyze this image_data and provide an answer to the users question i.e., {user_input}"},
+                            {"type": "image_url", "image_url": {"url": image_data}},
+                        ],
+                    },
+                ],
+            )
+    elif image_data and not user_input:
+        print("Image and no user input")
+        completion = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"Analyze this image_data and provide a response"},
+                            {"type": "image_url", "image_url": {"url": image_data}},
+                        ],
+                    },
+                ],
+            )
+    else:
+        print("No image and user input")
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_input}
+            ],
+        )
 
     # Extract the response message
     response_message = completion.choices[0].message.content
