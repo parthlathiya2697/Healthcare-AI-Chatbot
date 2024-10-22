@@ -11,21 +11,11 @@ import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image
 import { Badge } from "../components/ui/badge"
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
+import { stringify } from 'querystring'
 
-// Simulated data
-const hospitals = [
-  { id: 1, name: "Central Hospital", isOpen: true, distance: 2.5, address: "123 Main St, Cityville", rating: 4.5, comfort: 4.2, staff_behavior: 4.7, treatment_score: 4.6, image: "/placeholder.svg?height=100&width=200" },
-  { id: 2, name: "City Clinic", isOpen: false, distance: 1.8, address: "456 Oak Ave, Townsburg", rating: 4.2, comfort: 4.0, staff_behavior: 4.5, treatment_score: 4.3, image: "/placeholder.svg?height=100&width=200" },
-  { id: 3, name: "Community Health Center", isOpen: true, distance: 3.2, address: "789 Pine Rd, Villageton", rating: 4.8, comfort: 4.5, staff_behavior: 4.9, treatment_score: 4.7, image: "/placeholder.svg?height=100&width=200" },
-]
-
-const doctors = [
-  { id: 1, name: "Dr. Jane Smith", specialty: "Emergency Medicine", rating: 4.8, availability: [9, 10, 11, 14, 15, 16], behavior: 4.9, expertise: 4.8, feedbackSentiment: "Highly Positive", phone: "+1 (555) 123-4567" },
-  { id: 2, name: "Dr. John Doe", specialty: "General Practice", rating: 4.5, availability: [10, 11, 12, 13, 14], behavior: 4.6, expertise: 4.7, feedbackSentiment: "Positive", phone: "+1 (555) 987-6543" },
-  { id: 3, name: "Dr. Emily Brown", specialty: "Pediatrics", rating: 4.9, availability: [9, 10, 11, 12, 15, 16, 17], behavior: 5.0, expertise: 4.9, feedbackSentiment: "Extremely Positive", phone: "+1 (555) 246-8135" },
-]
 
 export default function HealthcareAIChatbot() {
+
   const [chatMessages, setChatMessages] = useState([
     { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }
   ])
@@ -44,11 +34,25 @@ export default function HealthcareAIChatbot() {
   const [doctors, setDoctors] = useState([]);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(true);
 
+
+  const [firstAidReference, setFirstAidReference] = useState('');
+  const [hospitalReference, setHospitalReference] = useState('');
+  const [doctorReference, setDoctorReference] = useState('');
+
+
   useEffect(() => {
-    axios.get('http://localhost:8000/api/hospitals/')
+    setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
+  }, [])
+
+  useEffect(() => {
+    axios.post('http://localhost:8000/api/hospitals/', {
+      query: 'Some query for hospitals',
+      reference_content: hospitalReference
+    })
       .then(response => {
         setHospitals(response.data);
-        console.log("hospitals: ", response.data)
+        console.log("JSON.stringify(response.data): ", JSON.stringify(response.data))
+        setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
         setIsLoadingHospitals(false);
       })
       .catch(error => {
@@ -57,11 +61,16 @@ export default function HealthcareAIChatbot() {
       });
   }, []);
 
+
   useEffect(() => {
-    axios.get('http://localhost:8000/api/doctors/')
+    axios.post('http://localhost:8000/api/doctors/', {
+      query: 'Some query for doctors',
+      reference_content: doctorReference
+    })
       .then(response => {
         setDoctors(response.data);
-        console.log("doctors: ", response.data);
+        console.log("JSON.stringify(doctors): ", JSON.stringify(response.data));
+        setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
         setIsLoadingDoctors(false);
       })
       .catch(error => {
@@ -70,37 +79,60 @@ export default function HealthcareAIChatbot() {
       });
   }, []);
 
+  function getCSRFToken() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith(name + '=')) {
+        return cookie.substring(name.length + 1);
+      }
+    }
+    return null;
+  }
 
-  // use effect for firstAidMessages
-  useEffect(() => {
-    console.log(firstAidMessages)
-  }, [firstAidMessages])
 
-  const handleSendMessage = (e: React.FormEvent, tabContent: string = '') => {
-    e.preventDefault()
+  function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
+    e.preventDefault();
     if (input.trim()) {
-      console.log("input: ", input, ", tabContent: ", tabContent)
+      console.log("input: ", input, ", tabContent: ", tabContent);
+
+      // Chat tab
       if (tabContent === 'chat') {
         setChatMessages([...chatMessages, { role: 'user', content: input }]);
-  
+
         // Call the chat API endpoint
-        axios.get(`http://localhost:8000/api/chat/?message=${encodeURIComponent(input)}`)
+        axios.post('http://localhost:8000/api/chat/', {
+          query: input,
+          chat_messages: chatMessages
+        }, {
+          headers: {
+            'X-CSRFToken': getCSRFToken() // Include CSRF token in the request headers
+          }
+        })
           .then(response => {
             const responseMessage = response.data.response;
             setChatMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+
           })
           .catch(error => {
-            console.error('Error fetching chat response:', error);
-            setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch a response at the moment." }]);
+            console.error('Error fetching first aid suggestions:', error);
+            setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the first aid suggestions at the moment." }]);
           });
       }
 
+
+      // First aid tab
       if (tabContent === 'firstAid') {
         console.log("firstAidMessages: matched, input : ", input);
         setFirstAidMessages([...firstAidMessages, { role: 'user', content: input }]);
-        
-        // Call the first aid suggestions API
-        axios.get(`http://localhost:8000/api/first-aid-suggestions/?query=${encodeURIComponent(input)}`)
+
+        // Call the first aid suggestions API with JSON input
+        axios.post('http://localhost:8000/api/first-aid-suggestions/', {
+          query: input,
+          reference_content: firstAidReference,
+          chat_messages: firstAidMessages
+        })
           .then(response => {
             const responseMessage = response.data.suggestion;
             setFirstAidMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
@@ -111,27 +143,51 @@ export default function HealthcareAIChatbot() {
           });
       }
 
-      if (tabContent == 'hospitals') {
-        console.log("hospitalMessages: matched",)
-        setHospitalMessages([...hospitalMessages, { role: 'user', content: input }])
-        // Simulate AI response (in a real app, this would call an API)
-        setTimeout(() => {
-          let response = "I understand your concern. Based on the information you've provided, here's my advice: The nearest open hospital is Central Hospital, 2.5 km away. It has high ratings for staff behavior and treatment quality. Would you like more details about this hospital?"
-          setHospitalMessages(prev => [...prev, { role: 'assistant', content: response }])
-        }, 1000)
+
+      // Hospitals tab
+      if (tabContent === 'hospitals') {
+        console.log("hospitalMessages: matched");
+        setHospitalMessages([...hospitalMessages, { role: 'user', content: input }]);
+
+        // Call the hospitals API with JSON input
+        axios.post('http://localhost:8000/api/hospitals_suggestions/', {
+          query: input,
+          reference_content: hospitalReference,
+          chat_messages: hospitalMessages
+        })
+          .then(response => {
+            const responseMessage = response.data.suggestion; // Adjust based on actual response structure
+            setHospitalMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+          })
+          .catch(error => {
+            console.error('Error fetching hospital information:', error);
+            setHospitalMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch hospital information at the moment." }]);
+          });
       }
 
-      if (tabContent == 'doctors') {
-        console.log("doctorMessages: matched",)
-        setDoctorMessages([...doctorMessages, { role: 'user', content: input }])
-        // Simulate AI response (in a real app, this would call an API)
-        setTimeout(() => {
-          let response = "I understand your concern. Based on the information you've provided, here's my advice: Dr. Jane Smith, our emergency medicine specialist, is available today at 2 PM and 3 PM. She has excellent reviews for her expertise in handling urgent cases."
-          setDoctorMessages(prev => [...prev, { role: 'assistant', content: response }])
-        }, 1000)
+
+      // Doctors tab
+      if (tabContent === 'doctors') {
+        console.log("doctorMessages: matched");
+        setDoctorMessages([...doctorMessages, { role: 'user', content: input }]);
+
+        // Call the doctors API with JSON input
+        axios.post('http://localhost:8000/api/doctors_suggestions/', {
+          query: input,
+          reference_content: doctorReference,
+          chat_messages: doctorMessages
+        })
+          .then(response => {
+            const responseMessage = response.data.suggestion; // Adjust based on actual response structure
+            setDoctorMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+          })
+          .catch(error => {
+            console.error('Error fetching doctor information:', error);
+            setDoctorMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch doctor information at the moment." }]);
+          });
       }
 
-      setInput('')
+      setInput('');
     }
   }
 
@@ -175,7 +231,7 @@ export default function HealthcareAIChatbot() {
   }
 
   return (
-   
+
     <>
       <Card className="w-full mainC">
         <CardHeader>
@@ -236,12 +292,11 @@ export default function HealthcareAIChatbot() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <h3 className="text-lg font-semibold">Common Emergency Situations:</h3>
+                  <h3 className="text-lg font-semibold">First AID</h3>
                   <ul className="list-disc pl-5 mt-2">
-                    <li>Cuts and Scrapes: Clean the wound with soap and water, apply antibiotic ointment, and cover with a sterile bandage.</li>
-                    <li>Burns: Run cool water over the burn for at least 10 minutes. Cover with a clean, dry dressing.</li>
-                    <li>Sprains: Remember RICE - Rest, Ice, Compression, and Elevation.</li>
-                    <li>Choking: Perform the Heimlich maneuver if the person can't cough, speak, or breathe.</li>
+                    <li>
+                      {firstAidReference}
+                    </li>
                   </ul>
                   <p className="mt-4 text-sm text-muted-foreground">Always seek professional medical help for serious injuries or if you're unsure about the severity of the situation.</p>
                 </CardContent>
