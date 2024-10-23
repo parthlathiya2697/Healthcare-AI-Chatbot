@@ -15,8 +15,8 @@ import VideoModal from './VideoModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faVideo, faCamera } from '@fortawesome/free-solid-svg-icons';
 import CameraPanel from './CameraPanel'
-
-
+import VideoDialog from './VideoDialog';
+import ImageModal from './ImageModal';
 
 
 
@@ -57,18 +57,35 @@ export default function HealthcareAIChatbot() {
 
 
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
-  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false); // Add state for VideoDialog
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false); // State for controlling the image modal
+
+
+  // Function to handle the recorded video blob
+  const handleVideoRecorded = (blob: Blob) => {
+    if (videoBlob) {
+      URL.revokeObjectURL(URL.createObjectURL(videoBlob)); // Revoke the old blob URL
+    }
+    setVideoBlob(blob);
+    setIsVideoDialogOpen(false); // Close the dialog after recording
+    setIsVideoModalOpen(true); // Open the video modal to show the recorded video
+  };
+
 
 
   const handleVideoThumbnailClick = () => {
     setIsVideoModalOpen(true);
+  };
+
+  const handleImageThumbnailClick = () => {
+    setIsImageModalOpen(true); // Open the image modal when the thumbnail is clicked
   };
 
   const handleStartVideoRecording = async () => {
@@ -412,14 +429,19 @@ export default function HealthcareAIChatbot() {
               </ScrollArea>
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
                 <div className="flex items-center w-full border rounded p-2">
-                  {base64Image && (
-                    <div className="flex items-center mr-2">
-                      <img src={base64Image} alt="Selected" className="w-8 h-8 object-cover rounded" />
-                      <Button type="button" onClick={discardImage} className="ml-1">
-                        ✖
-                      </Button>
-                    </div>
-                  )}
+                {base64Image && (
+        <div className="flex items-center mr-2">
+          <img 
+            src={base64Image} 
+            alt="Selected" 
+            className="w-8 h-8 object-cover rounded cursor-pointer" 
+            onClick={handleImageThumbnailClick} // Add the click event handler here
+          />
+          <Button type="button" onClick={discardImage} className="ml-1">
+            ✖
+          </Button>
+        </div>
+      )}
                   {videoBlob && (
                     <div className="flex items-center mr-2">
                       <video
@@ -458,7 +480,7 @@ export default function HealthcareAIChatbot() {
                   <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
                   <span className="sr-only">Record audio</span>
                 </Button>
-                <Button type="button" onClick={isRecordingVideo ? handleStopVideoRecording : handleStartVideoRecording} className="ml-2">
+                <Button type="button" onClick={() => setIsVideoDialogOpen(true)} className="ml-2">
                   <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
                   <span className="sr-only">Record Video</span>
                 </Button>
@@ -734,9 +756,31 @@ export default function HealthcareAIChatbot() {
       <VideoModal
         videoSrc={videoBlob ? URL.createObjectURL(videoBlob) : ''}
         isOpen={isVideoModalOpen}
-        onClose={() => setIsVideoModalOpen(false)}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+          if (videoBlob) {
+            URL.revokeObjectURL(URL.createObjectURL(videoBlob)); // Revoke the blob URL when closing
+          }
+        }}
+      />
+
+      {/* Video Dialog */}
+      <VideoDialog
+        isOpen={isVideoDialogOpen}
+        onClose={() => setIsVideoDialogOpen(false)}
+        onVideoRecorded={handleVideoRecorded} // Pass the handler for recorded video
+      />
+
+      {/* Image Modal */}
+      <ImageModal
+        imageSrc={base64Image}
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
       />
 
     </>
+
+    
+
   )
 }

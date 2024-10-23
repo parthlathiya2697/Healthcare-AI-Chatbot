@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Modal, Box, Button } from '@mui/material';
 
 const modalStyle = {
@@ -20,15 +20,18 @@ const modalStyle = {
 interface VideoDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onVideoRecorded: (videoBlob: Blob) => void;
 }
 
-const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecorded }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    let chunks: BlobPart[] = []; // Use a local variable instead of state
 
-  const handleStartRecording = () => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    
+  useEffect(() => {
+    if (isOpen && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           if (videoRef.current) {
@@ -36,12 +39,33 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose }) => {
           }
           const recorder = new MediaRecorder(stream);
           setMediaRecorder(recorder);
-          recorder.start();
-          setIsRecording(true);
+          chunks = []; // Reset chunks when a new recorder is created
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              chunks.push(event.data);
+            }
+          };
+          recorder.onstop = () => {
+            if (chunks.length > 0) {
+              const blob = new Blob(chunks, { type: 'video/webm' });
+              onVideoRecorded(blob);
+              chunks = []; // Clear chunks after recording
+            } else {
+              console.error("No video data recorded.");
+            }
+          };
         })
         .catch(err => {
           console.error("Error accessing camera:", err);
         });
+    }
+  }, [isOpen]);
+  
+
+  const handleStartRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.start();
+      setIsRecording(true);
     }
   };
 
@@ -49,8 +73,14 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose }) => {
     if (mediaRecorder) {
       mediaRecorder.stop();
       mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      setMediaRecorder(null);
       setIsRecording(false);
+      if (chunks.length > 0) {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        onVideoRecorded(blob);
+        setChunks([]); // Clear chunks after recording
+      } else {
+        console.error("No video data recorded.");
+      }
     }
   };
 

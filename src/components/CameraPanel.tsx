@@ -8,23 +8,24 @@ interface CameraPanelProps {
 }
 
 const modalStyle = {
-  position: 'fixed',  // Use fixed positioning
-  top: '50%',         // Position the top edge of the element at the middle of the screen
-  left: '50%',        // Position the left edge of the element at the middle of the screen
-  transform: 'translate(-50%, -50%)', // Shift the element to the left and up by half its width and height
-  width: '400px',     // Set a fixed width
-  height: 'auto',     // Auto-adjust the height based on content
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '400px',
+  height: 'auto',
   bgcolor: 'background.paper',
   boxShadow: 24,
   p: 4,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center', // Center-align the items vertically
-  justifyContent: 'center' // Center-align the items horizontally
+  alignItems: 'center',
+  justifyContent: 'center'
 };
 
 const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null); // Add this line
 
   useEffect(() => {
     if (isOpen) {
@@ -32,9 +33,13 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
         .then(stream => {
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
+            streamRef.current = stream; // Add this line
           }
         })
         .catch(error => console.error("Error accessing camera:", error));
+    } else if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop()); // Add this line
+      streamRef.current = null; // Add this line
     }
   }, [isOpen]);
 
@@ -50,19 +55,23 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
         onCapture(imageData);
       }
     }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop()); // Add this line
+      streamRef.current = null; // Add this line
+    }
     onClose();
   };
 
   return (
     <Modal open={isOpen} onClose={onClose}>
-    <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
-      <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-        <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>
-        <Button variant="outlined" color="secondary" onClick={onClose}>Close</Button>
+      <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
+        <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+          <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>
+          <Button variant="outlined" color="secondary" onClick={onClose}>Close</Button>
+        </Box>
       </Box>
-    </Box>
-  </Modal>
+    </Modal>
   );
 };
 
