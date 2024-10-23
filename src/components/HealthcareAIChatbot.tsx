@@ -11,6 +11,15 @@ import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image
 import { Badge } from "../components/ui/badge"
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
+import VideoModal from './VideoModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faVideo, faCamera } from '@fortawesome/free-solid-svg-icons';
+import CameraPanel from './CameraPanel'
+
+
+
+
+
 
 export default function HealthcareAIChatbot() {
 
@@ -46,6 +55,69 @@ export default function HealthcareAIChatbot() {
   const [isLoadingChatHospitals, setIsLoadingChatHospitals] = useState(false)
   const [isLoadingChatDoctors, setIsLoadingChatDoctors] = useState(false)
 
+
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
+
+
+  const handleVideoThumbnailClick = () => {
+    setIsVideoModalOpen(true);
+  };
+
+  const handleStartVideoRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error("Video recording not supported in this browser.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      } else {
+        console.error("Video element not found.");
+        return;
+      }
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        setVideoBlob(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecordingVideo(true);
+    } catch (error) {
+      console.error("Error accessing video stream:", error);
+    }
+  };
+
+  const handleStopVideoRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecordingVideo(false);
+  };
+
+  const discardVideo = () => {
+    setVideoBlob(null);
+  };
+
+
+  const handleCaptureImage = (imageData: string) => {
+    setBase64Image(imageData);
+  };
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
@@ -311,8 +383,9 @@ export default function HealthcareAIChatbot() {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
   }
 
-  return (
 
+
+  return (
     <>
       <Card className="w-full mainC">
         <CardHeader>
@@ -347,9 +420,22 @@ export default function HealthcareAIChatbot() {
                       </Button>
                     </div>
                   )}
+                  {videoBlob && (
+                    <div className="flex items-center mr-2">
+                      <video
+                        src={URL.createObjectURL(videoBlob)}
+                        className="w-8 h-8 object-cover rounded cursor-pointer"
+                        onClick={handleVideoThumbnailClick}
+                      />
+                      <Button type="button" onClick={discardVideo} className="ml-1">
+                        ✖
+                      </Button>
+                    </div>
+                  )}
+                  <video ref={videoRef} style={{ display: 'none' }} /> {/* Ensure video element is always rendered */}
                   {isLoadingChat ? (
                     <div className="flex-grow flex justify-center items-center">
-                      <CircularProgress size={24} /> {/* Use a loading spinner */}
+                      <CircularProgress size={24} />
                     </div>
                   ) : (
                     <Input
@@ -361,25 +447,23 @@ export default function HealthcareAIChatbot() {
                     />
                   )}
                 </div>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                />
-                <Button type="button" onClick={() => fileInputRef.current?.click()} className="ml-2">
-                  <ImageIcon className="w-4 h-4" />
-                  <span className="sr-only">Upload image</span>
+                <Button type="b utton" onClick={() => setIsCameraPanelOpen(true)} className="ml-2">
+                  <FontAwesomeIcon icon={faCamera} className="w-4 h-4" />
+                  <span className="sr-only">Capture Image</span>
                 </Button>
+
+               
+
                 <Button type="button" onClick={() => handleAudioInputForTab('chat')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                   <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
                   <span className="sr-only">Record audio</span>
                 </Button>
+                <Button type="button" onClick={isRecordingVideo ? handleStopVideoRecording : handleStartVideoRecording} className="ml-2">
+                  <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
+                  <span className="sr-only">Record Video</span>
+                </Button>
                 <Button type="submit" className="ml-2">Send</Button>
               </form>
-
-
             </TabsContent>
             <TabsContent value="firstAid">
               <Card>
@@ -392,11 +476,7 @@ export default function HealthcareAIChatbot() {
                 </CardHeader>
                 <CardContent>
                   <h3 className="text-lg font-semibold">First AID</h3>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>
-                      {firstAidReference}
-                    </li>
-                  </ul>
+                  {firstAidReference}
                   <p className="mt-4 text-sm text-muted-foreground">Always seek professional medical help for serious injuries or if you're unsure about the severity of the situation.</p>
                 </CardContent>
                 <CardFooter>
@@ -642,6 +722,21 @@ export default function HealthcareAIChatbot() {
           This AI assistant is for informational purposes only. Always consult with a qualified healthcare professional for medical advice.
         </CardFooter>
       </Card>
+
+      {/* Camera Panel */}
+      <CameraPanel
+        isOpen={isCameraPanelOpen}
+        onClose={() => setIsCameraPanelOpen(false)}
+        onCapture={handleCaptureImage}
+      />
+
+      {/* Video Modal */}
+      <VideoModal
+        videoSrc={videoBlob ? URL.createObjectURL(videoBlob) : ''}
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+      />
+
     </>
   )
 }
