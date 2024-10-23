@@ -429,19 +429,19 @@ export default function HealthcareAIChatbot() {
               </ScrollArea>
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
                 <div className="flex items-center w-full border rounded p-2">
-                {base64Image && (
-        <div className="flex items-center mr-2">
-          <img 
-            src={base64Image} 
-            alt="Selected" 
-            className="w-8 h-8 object-cover rounded cursor-pointer" 
-            onClick={handleImageThumbnailClick} // Add the click event handler here
-          />
-          <Button type="button" onClick={discardImage} className="ml-1">
-            ✖
-          </Button>
-        </div>
-      )}
+                  {base64Image && (
+                    <div className="flex items-center mr-2">
+                      <img
+                        src={base64Image}
+                        alt="Selected"
+                        className="w-8 h-8 object-cover rounded cursor-pointer"
+                        onClick={handleImageThumbnailClick} // Add the click event handler here
+                      />
+                      <Button type="button" onClick={discardImage} className="ml-1">
+                        ✖
+                      </Button>
+                    </div>
+                  )}
                   {videoBlob && (
                     <div className="flex items-center mr-2">
                       <video
@@ -474,7 +474,7 @@ export default function HealthcareAIChatbot() {
                   <span className="sr-only">Capture Image</span>
                 </Button>
 
-               
+
 
                 <Button type="button" onClick={() => handleAudioInputForTab('chat')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
                   <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
@@ -780,7 +780,7 @@ export default function HealthcareAIChatbot() {
 
     </>
 
-    
+
 
   )
 }
