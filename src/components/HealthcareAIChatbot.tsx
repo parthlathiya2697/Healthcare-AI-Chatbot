@@ -7,7 +7,7 @@ import { Input } from "../components/ui/input"
 import { ScrollArea } from "../components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image as ImageIcon, ArrowUp, ArrowDown, Phone } from 'lucide-react'
+import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image as ImageIcon, Video as VideoIcon, ArrowUp, ArrowDown, Phone } from 'lucide-react'
 import { Badge } from "../components/ui/badge"
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
@@ -429,27 +429,29 @@ export default function HealthcareAIChatbot() {
               </ScrollArea>
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
                 <div className="flex items-center w-full border rounded p-2">
-                  {base64Image && (
-                    <div className="flex items-center mr-2">
+                {base64Image && (
+                    <div className="flex flex-col items-center mr-2">
+                      <ImageIcon className="w-4 h-4 mt-1" /> {/* Add this line */}
                       <img
                         src={base64Image}
                         alt="Selected"
                         className="w-8 h-8 object-cover rounded cursor-pointer"
                         onClick={handleImageThumbnailClick} // Add the click event handler here
                       />
-                      <Button type="button" onClick={discardImage} className="ml-1">
+                      <Button type="button" onClick={discardImage} className="mt-1">
                         ✖
                       </Button>
                     </div>
                   )}
                   {videoBlob && (
-                    <div className="flex items-center mr-2">
+                    <div className="flex flex-col items-center mr-2">
+                      <VideoIcon className="w-4 h-4 mt-1" /> {/* Add this line */}
                       <video
                         src={URL.createObjectURL(videoBlob)}
                         className="w-8 h-8 object-cover rounded cursor-pointer"
                         onClick={handleVideoThumbnailClick}
                       />
-                      <Button type="button" onClick={discardVideo} className="ml-1">
+                      <Button type="button" onClick={discardVideo} className="mt-1">
                         ✖
                       </Button>
                     </div>
