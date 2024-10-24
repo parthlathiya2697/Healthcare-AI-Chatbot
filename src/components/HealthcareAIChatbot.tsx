@@ -17,7 +17,7 @@ import { faVideo, faCamera } from '@fortawesome/free-solid-svg-icons';
 import CameraPanel from './CameraPanel'
 import VideoDialog from './VideoDialog';
 import ImageModal from './ImageModal';
-
+import AudioDialog from './AudioDialog';
 
 export default function HealthcareAIChatbot() {
 
@@ -64,7 +64,8 @@ export default function HealthcareAIChatbot() {
   const [videoModalSrc, setVideoModalSrc] = useState(''); // Add state for video modal source
   const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // State for controlling the image modal
-
+  const [isAudioDialogOpen, setIsAudioDialogOpen] = useState(false); // State for AudioDialog
+  const [currentTab, setCurrentTab] = useState('chat');
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
@@ -103,6 +104,31 @@ export default function HealthcareAIChatbot() {
       });
   }, []);
 
+  const handleAudioRecorded = (audioBlob: Blob) => {
+    // Handle the recorded audio blob (e.g., send it to an API or play it)
+    console.log("Audio recorded:", audioBlob);
+    setIsAudioDialogOpen(false); // Close the dialog after recording
+  };
+
+  const handleTextRecognized = (text: string) => {
+    // Update the appropriate input based on the current tab
+    switch (currentTab) { // Assuming you have a state variable to track the current tab
+      case 'chat':
+        setChatInput(text);
+        break;
+      case 'firstAid':
+        setFirstAidInput(text);
+        break;
+      case 'hospitals':
+        setHospitalInput(text);
+        break;
+      case 'doctors':
+        setDoctorInput(text);
+        break;
+      default:
+        break;
+    }
+  };
 
   const handleVideoRecorded = (blob: Blob) => {
     if (videoBlob) {
@@ -357,7 +383,7 @@ export default function HealthcareAIChatbot() {
           <CardDescription>Get first aid advice, find nearby hospitals, and connect with doctors</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="chat">
+          <Tabs defaultValue="chat" onValueChange={setCurrentTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="chat"><MessageCircle className="w-4 h-4 mr-2" />Chat</TabsTrigger>
               <TabsTrigger value="firstAid"><AlertTriangle className="w-4 h-4 mr-2" />First Aid</TabsTrigger>
@@ -429,9 +455,9 @@ export default function HealthcareAIChatbot() {
                   <FontAwesomeIcon icon={faCamera} className="w-4 h-4" />
                   <span className="sr-only">Capture Image</span>
                 </Button>
-                <Button type="button" onClick={() => handleAudioInputForTab('chat')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
-                  <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
-                  <span className="sr-only">Record audio</span>
+                <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className={`ml-2`}>
+                    <Mic className={`w-4 h-4`} />
+                    <span className="sr-only">Record audio</span>
                 </Button>
                 <Button type="button" onClick={() => setIsVideoDialogOpen(true)} className="ml-2">
                   <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
@@ -732,6 +758,14 @@ export default function HealthcareAIChatbot() {
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
       />
+
+      {/* Audio Dialog */}
+      <AudioDialog
+                isOpen={isAudioDialogOpen}
+                onClose={() => setIsAudioDialogOpen(false)}
+                onAudioRecorded={handleAudioRecorded}
+                onTextRecognized={handleTextRecognized} // Pass the handler for recognized text
+            />
     </>
   )
 }
