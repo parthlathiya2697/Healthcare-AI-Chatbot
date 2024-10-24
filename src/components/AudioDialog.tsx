@@ -129,18 +129,18 @@ const AudioDialog: React.FC<AudioDialogProps> = ({ isOpen, onClose, onAudioRecor
                 </Box>
                 <br/>
                 {recognizedText && (
-                        <Box sx={{ mt: 2, textAlign: 'center', width: '100%' }}>
-                            <p>Recognized Text:</p>
-                            <TextField
+                        <Box sx={{ mt: 2, textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', justifyContent: 'space-around', alignItems: 'center' }}>
+                            <p><b>Recognized Text:</b></p>
+                            <input
                                 value={recognizedText}
                                 multiline
                                 rows={4}
                                 variant="outlined"
                                 fullWidth
-                                InputProps={{
-                                    readOnly: true,
-                                }}
+                                onChange={(e) => setRecognizedText(e.target.value)} // Add onChange handler
+                                style={{border: '1px solid grey', borderRadius: '10px', padding: '10px', width: '70%'}}
                             />
+                            <br/>
                             <Button variant="contained" color="primary" onClick={handleUseText}>Use Text</Button>
                         </Box>
                     )}
