@@ -85,9 +85,10 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
 
     return (
         <Modal open={isOpen} onClose={handleClose}>
-            <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
-                <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
-                <br />
+        <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
+            <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
+            <br />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                 {!videoBlob && isRecording ? (
                     <Button variant="contained" color="secondary" onClick={handleStopRecording}>Stop Recording</Button>
                 ) : (
@@ -95,7 +96,8 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
                 )}
                 <Button variant="outlined" color="secondary" onClick={handleClose}>Close</Button>
             </Box>
-        </Modal>
+        </Box>
+    </Modal>
     );
 };
 

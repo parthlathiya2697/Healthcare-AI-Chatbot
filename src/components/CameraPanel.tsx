@@ -24,6 +24,7 @@ const modalStyle = {
 };
 
 const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture }) => {
+  
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -77,21 +78,26 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
 
   return (
     <Modal open={isOpen} onClose={handleClose}>
-      <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
-        {capturedImage ? (
-          <img src={capturedImage} alt="Captured" style={{ width: '100%', height: 'auto' }} />
-        ) : (
-          <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
+    <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
+      {capturedImage ? (
+        <img src={capturedImage} alt="Captured" style={{ width: '100%', height: 'auto' }} />
+      ) : (
+        <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
+      )}
+      <br />
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: capturedImage ? 'center' : 'space-between', 
+        mt: 2, 
+        width: '100%' 
+      }}>
+        {!capturedImage && (
+          <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>
         )}
-        <br />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          {!capturedImage && (
-            <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>
-          )}
-          <Button variant="outlined" color="secondary" onClick={handleClose}>Close</Button>
-        </Box>
+        <Button variant="outlined" color="secondary" onClick={handleClose}>Close</Button>
       </Box>
-    </Modal>
+    </Box>
+  </Modal>
   );
 };
 

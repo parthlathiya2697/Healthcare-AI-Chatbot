@@ -19,12 +19,11 @@ import VideoDialog from './VideoDialog';
 import ImageModal from './ImageModal';
 
 
-
-
 export default function HealthcareAIChatbot() {
 
   const [chatMessages, setChatMessages] = useState([
-    { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }])
+    { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }
+  ])
   const [firstAidMessages, setFirstAidMessages] = useState([])
   const [hospitalMessages, setHospitalMessages] = useState([])
   const [doctorMessages, setDoctorMessages] = useState([])
@@ -36,7 +35,6 @@ export default function HealthcareAIChatbot() {
   const [hospitalSort, setHospitalSort] = useState('distance')
   const [sortOrder, setSortOrder] = useState('asc')
   const [selectedDoctor, setSelectedDoctor] = useState(null)
-  const fileInputRef = useRef(null)
 
   const [hospitals, setHospitals] = useState([]);
   const [isLoadingHospitals, setIsLoadingHospitals] = useState(true);
@@ -67,74 +65,6 @@ export default function HealthcareAIChatbot() {
   const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // State for controlling the image modal
 
-
-  // Function to handle the recorded video blob
-  const handleVideoRecorded = (blob: Blob) => {
-    if (videoBlob) {
-      URL.revokeObjectURL(URL.createObjectURL(videoBlob)); // Revoke the old blob URL
-    }
-    setVideoBlob(blob);
-    setIsVideoDialogOpen(false); // Close the dialog after recording
-    setIsVideoModalOpen(true); // Open the video modal to show the recorded video
-  };
-
-
-
-  const handleVideoThumbnailClick = () => {
-    setIsVideoModalOpen(true);
-  };
-
-  const handleImageThumbnailClick = () => {
-    setIsImageModalOpen(true); // Open the image modal when the thumbnail is clicked
-  };
-
-  const handleStartVideoRecording = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error("Video recording not supported in this browser.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      } else {
-        console.error("Video element not found.");
-        return;
-      }
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      const chunks: BlobPart[] = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        setVideoBlob(blob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecordingVideo(true);
-    } catch (error) {
-      console.error("Error accessing video stream:", error);
-    }
-  };
-
-  const handleStopVideoRecording = () => {
-    mediaRecorderRef.current?.stop();
-    setIsRecordingVideo(false);
-  };
-
-  const discardVideo = () => {
-    setVideoBlob(null);
-  };
-
-
-  const handleCaptureImage = (imageData: string) => {
-    setBase64Image(imageData);
-  };
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
@@ -173,6 +103,32 @@ export default function HealthcareAIChatbot() {
       });
   }, []);
 
+
+  const handleVideoRecorded = (blob: Blob) => {
+    if (videoBlob) {
+      URL.revokeObjectURL(URL.createObjectURL(videoBlob)); // Revoke the old blob URL
+    }
+    setVideoBlob(blob);
+    setIsVideoDialogOpen(false); // Close the dialog after recording
+    setIsVideoModalOpen(true); // Open the video modal to show the recorded video
+  };
+
+  const handleVideoThumbnailClick = () => {
+    setIsVideoModalOpen(true);
+  };
+
+  const handleImageThumbnailClick = () => {
+    setIsImageModalOpen(true); // Open the image modal when the thumbnail is clicked
+  };
+
+  const discardVideo = () => {
+    setVideoBlob(null);
+  };
+
+  const handleCaptureImage = (imageData: string) => {
+    setBase64Image(imageData);
+  };
+
   function getCSRFToken() {
     const name = 'csrftoken';
     const cookies = document.cookie.split(';');
@@ -184,7 +140,6 @@ export default function HealthcareAIChatbot() {
     }
     return null;
   }
-
 
   function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
     console.log("tabContent: ", tabContent);
@@ -310,8 +265,8 @@ export default function HealthcareAIChatbot() {
     }
   }
 
-
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+
 
   function handleAudioInputForTab(tabContent: string) {
     if (!('webkitSpeechRecognition' in window)) {
@@ -369,18 +324,6 @@ export default function HealthcareAIChatbot() {
     recognitionRef.current.start();
   }
 
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBase64Image(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const discardImage = () => {
     setBase64Image(null);
   };
@@ -399,7 +342,6 @@ export default function HealthcareAIChatbot() {
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
   }
-
 
 
   return (
