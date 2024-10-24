@@ -7,7 +7,7 @@ import { Input } from "../components/ui/input"
 import { ScrollArea } from "../components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image as ImageIcon, Video as VideoIcon, ArrowUp, ArrowDown, Phone } from 'lucide-react'
+import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image as ImageIcon, Video as VideoIcon, ArrowUp, ArrowDown, Phone, CircleX } from 'lucide-react'
 import { Badge } from "../components/ui/badge"
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
@@ -428,66 +428,72 @@ export default function HealthcareAIChatbot() {
                 ))}
               </ScrollArea>
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
-                <div className="flex items-center w-full border rounded p-2">
-                {base64Image && (
-                    <div className="flex flex-col items-center mr-2">
-                      <ImageIcon className="w-4 h-4 mt-1" /> {/* Add this line */}
-                      <img
-                        src={base64Image}
-                        alt="Selected"
-                        className="w-8 h-8 object-cover rounded cursor-pointer"
-                        onClick={handleImageThumbnailClick} // Add the click event handler here
-                      />
-                      <Button type="button" onClick={discardImage} className="mt-1">
-                        ✖
-                      </Button>
-                    </div>
-                  )}
-                  {videoBlob && (
-                    <div className="flex flex-col items-center mr-2">
-                      <VideoIcon className="w-4 h-4 mt-1" /> {/* Add this line */}
-                      <video
-                        src={URL.createObjectURL(videoBlob)}
-                        className="w-8 h-8 object-cover rounded cursor-pointer"
-                        onClick={handleVideoThumbnailClick}
-                      />
-                      <Button type="button" onClick={discardVideo} className="mt-1">
-                        ✖
-                      </Button>
-                    </div>
-                  )}
-                  <video ref={videoRef} style={{ display: 'none' }} /> {/* Ensure video element is always rendered */}
-                  {isLoadingChat ? (
-                    <div className="flex-grow flex justify-center items-center">
-                      <CircularProgress size={24} />
-                    </div>
-                  ) : (
-                    <Input
-                      type="text"
-                      placeholder="Type your message..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      className="flex-grow"
-                    />
-                  )}
-                </div>
-                <Button type="b utton" onClick={() => setIsCameraPanelOpen(true)} className="ml-2">
-                  <FontAwesomeIcon icon={faCamera} className="w-4 h-4" />
-                  <span className="sr-only">Capture Image</span>
-                </Button>
+  <div className="flex items-center w-full border rounded p-2">
+    {isLoadingChat ? (
+      <div className="flex-grow flex justify-center items-center">
+        <CircularProgress size={24} />
+      </div>
+    ) : (
+      <div className="flex w-full"> {/* Changed from div to flexbox container */}
+        <div className="flex items-center"> {/* Wrap thumbnails in their own container */}
+          {base64Image && (
+            <div className="relative mr-4 w-12 h-12">
+              <ImageIcon className="w-4 h-4 mt-1" />
+              <div className="relative w-full h-full">
+                <img
+                  src={base64Image}
+                  alt="Selected"
+                  className="w-full h-full object-cover rounded cursor-pointer"
+                  onClick={handleImageThumbnailClick}
+                />
+                <CircleX onClick={discardImage} style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'white', borderRadius: '100px', cursor: 'pointer' }} />
+              </div>
+            </div>
+          )}
+          {videoBlob && (
+            <div className="relative mr-4 w-12 h-12">
+              <VideoIcon className="w-4 h-4 mt-1" />
+              <div className="relative w-full h-full">
+                <video
+                  src={URL.createObjectURL(videoBlob)}
+                  className="w-full h-full object-cover rounded cursor-pointer"
+                  onClick={handleVideoThumbnailClick}
+                />
+                <CircleX onClick={discardVideo} style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'white', borderRadius: '100px', cursor: 'pointer' }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Adjusted Input Field */}
+        <div className="flex-grow ml-4"> {/* Flex-grow to occupy remaining space */}
+          <Input
+            type="text"
+            placeholder="Type your message..."
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            className="w-full" // Full width inside flex-grow container
+          />
+        </div>
+      </div>
+    )}
+  </div>
+  <Button type="button" onClick={() => setIsCameraPanelOpen(true)} className="ml-2">
+    <FontAwesomeIcon icon={faCamera} className="w-4 h-4" />
+    <span className="sr-only">Capture Image</span>
+  </Button>
+  <Button type="button" onClick={() => handleAudioInputForTab('chat')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
+    <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+    <span className="sr-only">Record audio</span>
+  </Button>
+  <Button type="button" onClick={() => setIsVideoDialogOpen(true)} className="ml-2">
+    <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
+    <span className="sr-only">Record Video</span>
+  </Button>
+  <Button type="submit" className="ml-2">Send</Button>
+</form>
 
 
-
-                <Button type="button" onClick={() => handleAudioInputForTab('chat')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
-                  <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
-                  <span className="sr-only">Record audio</span>
-                </Button>
-                <Button type="button" onClick={() => setIsVideoDialogOpen(true)} className="ml-2">
-                  <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
-                  <span className="sr-only">Record Video</span>
-                </Button>
-                <Button type="submit" className="ml-2">Send</Button>
-              </form>
             </TabsContent>
             <TabsContent value="firstAid">
               <Card>
@@ -768,6 +774,7 @@ export default function HealthcareAIChatbot() {
 
       {/* Video Dialog */}
       <VideoDialog
+        videoSrc={videoBlob ? URL.createObjectURL(videoBlob) : ''}
         isOpen={isVideoDialogOpen}
         onClose={() => setIsVideoDialogOpen(false)}
         onVideoRecorded={handleVideoRecorded} // Pass the handler for recorded video

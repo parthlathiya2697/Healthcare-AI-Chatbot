@@ -1,36 +1,51 @@
 import React from 'react';
+import { Modal, Box, Button } from '@mui/material';
+
 
 interface VideoModalProps {
-  videoSrc: string;
-  isOpen: boolean;
-  onClose: () => void;
+    videoSrc: string;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
+const modalStyle = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 'auto',
+    height: 'auto',
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    p: 4,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center'
+};
+
 const VideoModal: React.FC<VideoModalProps> = ({ videoSrc, isOpen, onClose }) => {
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+    const handleBackgroundClick = (e: React.MouseEvent) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
 
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
-      onClick={handleBackgroundClick}
-    >
-      <div className="relative bg-white p-4 rounded-lg shadow-lg">
-        <video src={videoSrc} controls autoPlay className="w-full h-auto" />
-        <button
-          onClick={onClose}
-          className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-red-500 text-lg"
-        >
-          <h1 style={{fontSize: '50px', position: 'fixed'}}>✖</h1>
-        </button>
-      </div>
-    </div>
-  );
+    const handleClose = () => {
+        onClose();
+    };
+
+    return (
+        <Modal open={isOpen} onClose={handleClose}>
+            <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
+                <video src={videoSrc} controls autoPlay className="w-full h-auto" />
+                <br/>
+                <Button variant="outlined" color="secondary" onClick={onClose}>Close</Button>
+            </Box>
+        </Modal>
+    );
 };
 
 export default VideoModal;
