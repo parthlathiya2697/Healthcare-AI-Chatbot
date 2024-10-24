@@ -61,7 +61,7 @@ export default function HealthcareAIChatbot() {
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false); // Add state for VideoDialog
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-
+  const [videoModalSrc, setVideoModalSrc] = useState(''); // Add state for video modal source
   const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // State for controlling the image modal
 
@@ -114,7 +114,12 @@ export default function HealthcareAIChatbot() {
   };
 
   const handleVideoThumbnailClick = () => {
-    setIsVideoModalOpen(true);
+    if (videoBlob) {
+      // Use window.URL.createObjectURL instead of URL.createObjectURL
+      const videoUrl = window.URL.createObjectURL(videoBlob);
+      setIsVideoModalOpen(true);
+      setVideoModalSrc(videoUrl);
+    }
   };
 
   const handleImageThumbnailClick = () => {

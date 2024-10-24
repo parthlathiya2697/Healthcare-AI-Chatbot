@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Modal, Box, Button } from '@mui/material';
+import { Modal, Box, Button, Input } from '@mui/material';
 
 interface CameraPanelProps {
   isOpen: boolean;
@@ -24,10 +24,11 @@ const modalStyle = {
 };
 
 const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture }) => {
-  
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,31 +74,58 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
 
   const handleClose = () => {
     setCapturedImage(null);
+    setSelectedImage(null);
     onClose();
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target && e.target.result) {
+          setSelectedImage(file);
+          setCapturedImage(e.target.result as string);
+          onCapture(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
     <Modal open={isOpen} onClose={handleClose}>
-    <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
-      {capturedImage ? (
-        <img src={capturedImage} alt="Captured" style={{ width: '100%', height: 'auto' }} />
-      ) : (
-        <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
-      )}
-      <br />
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: capturedImage ? 'center' : 'space-between', 
-        mt: 2, 
-        width: '100%' 
-      }}>
-        {!capturedImage && (
-          <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>
+      <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
+        {capturedImage ? (
+          <img src={capturedImage} alt="Captured" style={{ width: '100%', height: 'auto' }} />
+        ) : (
+          <>
+            <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
+          </>
         )}
-        <Button variant="outlined" color="secondary" onClick={handleClose}>Close</Button>
+        <br />
+        <Box sx={{
+          display: 'flex',
+          justifyContent: capturedImage ? 'center' : 'space-between',
+          mt: 2,
+          width: '100%'
+        }}>
+          {!capturedImage && (
+            <>
+              <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>
+            </>
+          )}
+          {/* Only show the file upload button if no image is captured */}
+          {selectedImage === null && (
+            <Button variant="contained" color="primary" component="label">
+              Choose File
+              <input type="file" accept="image/*" hidden onChange={handleImageUpload} />
+            </Button>
+          )}
+          <Button variant="outlined" color="secondary" onClick={handleClose}>Close</Button>
+        </Box>
       </Box>
-    </Box>
-  </Modal>
+    </Modal>
   );
 };
 

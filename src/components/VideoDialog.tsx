@@ -28,6 +28,7 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
     const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+    const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
     let chunks: BlobPart[] = [];
 
     useEffect(() => {
@@ -80,7 +81,18 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
 
     const handleClose = () => {
         setVideoBlob(null);
+        setSelectedVideo(null);
         onClose();
+    };
+
+    const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            setSelectedVideo(file);
+            // Directly use the File object as the video source
+            setVideoBlob(file); 
+            onVideoRecorded(file); 
+        }
     };
 
     return (
@@ -90,11 +102,17 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
             <br />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                 {!videoBlob && isRecording ? (
-                    <Button variant="contained" color="secondary" onClick={handleStopRecording}>Stop Recording</Button>
+                    <Button variant="contained" color="secondary" onClick={handleStopRecording} sx={{ fontSize: '0.8rem' }}>Stop</Button>
                 ) : (
-                    <Button variant="contained" color="primary" onClick={handleStartRecording}>Start Recording</Button>
+                    <>
+                        <Button variant="contained" color="primary" onClick={handleStartRecording} sx={{ fontSize: '0.8rem' }}>Start</Button>
+                        <Button variant="contained" color="primary" component="label" sx={{ ml: 1, fontSize: '0.8rem' }}>
+                            Choose File
+                            <input type="file" accept="video/*" hidden onChange={handleVideoUpload} />
+                        </Button>
+                    </>
                 )}
-                <Button variant="outlined" color="secondary" onClick={handleClose}>Close</Button>
+                <Button variant="outlined" color="secondary" onClick={handleClose} sx={{ ml: 1, fontSize: '0.8rem' }}>Close</Button>
             </Box>
         </Box>
     </Modal>
