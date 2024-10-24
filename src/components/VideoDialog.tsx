@@ -52,6 +52,8 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
                             setVideoBlob(blob);
                             onVideoRecorded(blob);
                             chunks = [];
+                            // Stop the camera stream after recording
+                            stream.getTracks().forEach(track => track.stop());
                         } else {
                             console.error("No video data recorded.");
                         }
@@ -74,7 +76,6 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
     const handleStopRecording = () => {
         if (mediaRecorder) {
             mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
             setIsRecording(false);
         }
     };

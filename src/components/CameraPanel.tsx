@@ -69,7 +69,7 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
         onCapture(imageData);
       }
     }
-    cleanupStream();
+    cleanupStream(); // Stop the camera stream after capturing
   };
 
   const handleClose = () => {
@@ -116,7 +116,7 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
             </>
           )}
           {/* Only show the file upload button if no image is captured */}
-          {selectedImage === null && (
+          {selectedImage === null && capturedImage === null && ( // Added capturedImage === null condition
             <Button variant="contained" color="primary" component="label">
               Choose File
               <input type="file" accept="image/*" hidden onChange={handleImageUpload} />
