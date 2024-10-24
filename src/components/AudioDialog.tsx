@@ -35,9 +35,12 @@ const AudioDialog: React.FC<AudioDialogProps> = ({ isOpen, onClose, onAudioRecor
     let chunks: BlobPart[] = [];
 
     useEffect(() => {
+        let userStream: MediaStream | null = null; // Declare userStream locally
+
         if (isOpen) {
             navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(userStream => {
+                .then(stream => {
+                    userStream = stream; // Assign the stream to the local variable
                     setStream(userStream); // Store the stream
                 })
                 .catch(err => {
@@ -47,8 +50,10 @@ const AudioDialog: React.FC<AudioDialogProps> = ({ isOpen, onClose, onAudioRecor
 
         // Cleanup function to stop the stream when the dialog is closed
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop()); // Stop all tracks
+            if (userStream) { // Check if userStream is defined
+                userStream.getTracks().forEach(track => track.stop()); // Stop all tracks
+                userStream = null; // Reset the local stream variable
+                setStream(null); // Reset the stream state
             }
         };
     }, [isOpen]);

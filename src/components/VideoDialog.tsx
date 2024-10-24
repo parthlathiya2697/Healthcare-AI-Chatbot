@@ -32,9 +32,11 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
     let chunks: BlobPart[] = [];
 
     useEffect(() => {
+        let stream: MediaStream | null = null; // Declare stream variable
         if (isOpen) {
             navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
+                .then(newStream => {
+                    stream = newStream; // Assign the stream
                     if (videoRef.current) {
                         videoRef.current.srcObject = stream;
                     }
@@ -53,7 +55,7 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
                             onVideoRecorded(blob);
                             chunks = [];
                             // Stop the camera stream after recording
-                            stream.getTracks().forEach(track => track.stop());
+                            stream.getTracks().forEach(track => track.stop()); // Stop the stream
                         } else {
                             console.error("No video data recorded.");
                         }
@@ -62,8 +64,22 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
                 .catch(err => {
                     console.error("Error accessing camera:", err);
                 });
+        } else {
+            // Close the camera stream when the dialog is closed
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null; // Reset the stream
+            }
         }
+        // Cleanup the stream when the component unmounts
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        };
     }, [isOpen]);
+
 
     const handleStartRecording = () => {
         if (mediaRecorder) {
