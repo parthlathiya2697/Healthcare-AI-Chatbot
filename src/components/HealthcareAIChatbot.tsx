@@ -370,16 +370,16 @@ export default function HealthcareAIChatbot() {
                 ))}
               </ScrollArea>
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
-                <div className="flex items-center w-full border rounded p-2">
+                <div className="flex items-start w-full border rounded p-2" style={{ minHeight: '4rem' }}> {/* Adjusted for flexible height */}
                   {isLoadingChat ? (
                     <div className="flex-grow flex justify-center items-center">
                       <CircularProgress size={24} />
                     </div>
                   ) : (
-                    <div className="flex w-full"> {/* Changed from div to flexbox container */}
-                      <div className="flex items-center"> {/* Wrap thumbnails in their own container */}
+                    <div className="flex w-full"> {/* Ensure items are aligned to start */}
+                      <div className="flex items-start"> {/* Align items to the start */}
                         {base64Image && (
-                          <div className="relative mr-4 w-12 h-12">
+                          <div className="relative mr-4 w-12 h-12 flex-shrink-0"> {/* Prevent shrinking */}
                             <ImageIcon className="w-4 h-4 mt-1" />
                             <div className="relative w-full h-full">
                               <img
@@ -393,7 +393,7 @@ export default function HealthcareAIChatbot() {
                           </div>
                         )}
                         {videoBlob && (
-                          <div className="relative mr-4 w-12 h-12">
+                          <div className="relative mr-4 w-12 h-12 flex-shrink-0"> {/* Prevent shrinking */}
                             <VideoIcon className="w-4 h-4 mt-1" />
                             <div className="relative w-full h-full">
                               <video
@@ -408,13 +408,13 @@ export default function HealthcareAIChatbot() {
                       </div>
 
                       {/* Adjusted Input Field */}
-                      <div className="flex-grow ml-4"> {/* Flex-grow to occupy remaining space */}
+                      <div className="flex-grow ml-4">
                         <Input
                           type="text"
                           placeholder="Type your message..."
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
-                          className="w-full" // Full width inside flex-grow container
+                          className="w-full"
                         />
                       </div>
                     </div>
