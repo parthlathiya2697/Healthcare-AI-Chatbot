@@ -87,7 +87,7 @@ const VideoDialog: React.FC<VideoDialogProps> = ({ isOpen, onClose, onVideoRecor
         <Modal open={isOpen} onClose={handleClose}>
             <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
                 <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
-                <br/>
+                <br />
                 {!videoBlob && isRecording ? (
                     <Button variant="contained" color="secondary" onClick={handleStopRecording}>Stop Recording</Button>
                 ) : (

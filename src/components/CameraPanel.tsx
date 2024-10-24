@@ -83,7 +83,7 @@ const CameraPanel: React.FC<CameraPanelProps> = ({ isOpen, onClose, onCapture })
         ) : (
           <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto' }} />
         )}
-        <br/>
+        <br />
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           {!capturedImage && (
             <Button variant="contained" color="primary" onClick={handleCapture}>Capture</Button>

@@ -41,7 +41,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ videoSrc, isOpen, onClose }) =>
         <Modal open={isOpen} onClose={handleClose}>
             <Box sx={{ ...modalStyle, width: '400px', height: 'auto', p: 2 }}>
                 <video src={videoSrc} controls autoPlay className="w-full h-auto" />
-                <br/>
+                <br />
                 <Button variant="outlined" color="secondary" onClick={onClose}>Close</Button>
             </Box>
         </Modal>
