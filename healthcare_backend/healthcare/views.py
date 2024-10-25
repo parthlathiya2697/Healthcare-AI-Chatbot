@@ -1,15 +1,25 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-
+from django.views.decorators.http import require_POST
 import os, json
 from openai import OpenAI
+import logging
+from pydub import AudioSegment
+import tempfile
+import audioread
+
+logger = logging.getLogger(__name__)
+import openai
 
 import base64  # Import base64 module here
 import uuid
-
+from django.core.files.uploadedfile import TemporaryUploadedFile
+import soundfile as sf
+import io
 # Create your views here.
 from django.http import JsonResponse
 from .models import Hospital, Doctor
+import numpy as np
 
 @csrf_exempt
 def chat(request):
@@ -197,3 +207,74 @@ def doctor_list(request):
     doctors = list(Doctor.objects.values())
     return JsonResponse(doctors, safe=False)
 
+def convert_to_wav(input_audio_file):
+    # Read the audio file using audioread and soundfile
+    with io.BytesIO() as buffer:
+        # Open the input audio file with soundfile
+        with sf.SoundFile(input_audio_file) as file:
+            # Write audio data to a WAV buffer
+            with sf.SoundFile(buffer, mode='w', samplerate=file.samplerate, channels=file.channels, format='WAV') as output:
+                output.write(file.read(dtype='float32'))
+        buffer.seek(0)
+        return buffer
+
+
+@require_POST
+@csrf_exempt
+def translate_audio(request):
+    audio_file = request.FILES.get('audio_file')
+
+    # if audio_file:
+    #     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+    #     try:
+    #         # Check if the file is in-memory or a temporary file
+    #         if hasattr(audio_file, 'temporary_file_path'):
+    #             # File is stored as a temporary file
+    #             input_path = audio_file.temporary_file_path()
+    #         else:
+    #             # File is in-memory, save it to a temporary file
+    #             with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_input_file:
+    #                 # Write the in-memory file content to a temporary file
+    #                 for chunk in audio_file.chunks():
+    #                     temp_input_file.write(chunk)
+    #                 input_path = temp_input_file.name
+
+    #         # Create a temporary file for the WAV output
+    #         with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_wav_file:
+    #             wav_file_path = temp_wav_file.name
+
+    #         # Use audioread to open the audio file
+    #         with audioread.audio_open(input_path) as input_audio:
+    #             # Initialize a buffer for writing samples
+    #             with sf.SoundFile(wav_file_path, mode='w', samplerate=input_audio.samplerate, channels=input_audio.channels, format='WAV', subtype='PCM_16') as wav_file:
+    #                 for buffer in input_audio:
+    #                     # Convert bytes to numpy array (float32) and write to WAV file
+    #                     audio_data = np.frombuffer(buffer, dtype=np.int16)  # Assuming PCM 16-bit data
+    #                     wav_file.write(audio_data)
+
+
+    #         # Use the WAV file with the OpenAI API
+    #         with open(wav_file_path, 'rb') as wav_file:
+
+    #             # Use the WAV buffer with OpenAI API
+    #             transcription = client.audio.transcriptions.create(
+    #             model="whisper-1", 
+    #             file=wav_file, 
+    #             response_format="text"
+    #             )
+
+    #             # Delete the temporary MP3 file
+    #             os.remove(wav_file_path)
+
+
+    #         # Return the transcribed text as JSON
+    #         return JsonResponse({'text': transcription})
+    #     except Exception as e:
+    #         import traceback
+    #         traceback.print_exc()
+    #         return JsonResponse({'error': 'OpenAI API error', 'details': str(e)}, status=500)
+    # else:
+    #     return JsonResponse({'error': 'No audio file provided'}, status=400)
+
+    return JsonResponse({'text': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line

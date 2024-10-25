@@ -142,3 +142,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Your Next.js frontend URL
     "http://localhost:8000",  # Your Next.js frontend URL
 ]
+
+APPEND_SLASH = False
