@@ -104,6 +104,15 @@ export default function HealthcareAIChatbot() {
       });
   }, []);
 
+  async function toBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+  }
+
   const handleAudioRecorded = (audioBlob: Blob) => {
     // Handle the recorded audio blob (e.g., send it to an API or play it)
     console.log("Audio recorded:", audioBlob);
@@ -172,20 +181,28 @@ export default function HealthcareAIChatbot() {
     return null;
   }
 
-  function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
+  async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
     console.log("tabContent: ", tabContent);
     console.log("tabContent === 'firstAid': ", tabContent === 'firstAid');
     e.preventDefault();
     // Chat tab
-    if (tabContent === 'chat' && (chatInput.trim() !== '' || base64Image)) {
+    console.log("chatInput: ", chatInput);
+    console.log("base64Image: ", base64Image);
+    console.log("videoBlob: ", videoBlob);
+    if (tabContent === 'chat' && (chatInput.trim() !== '' || base64Image || videoBlob)) {
       setChatMessages([...chatMessages, { role: 'user', content: chatInput }]);
       setIsLoadingChat(true); // Set loading to true when sending message
+
+      
+
+      const videoBase64 = videoBlob ?  await toBase64(videoBlob) : null; // Assuming you have a toBase64 function
 
       // Call the chat API endpoint
       axios.post('http://localhost:8000/api/chat/', {
         query: chatInput,
         chat_messages: chatMessages,
-        image: base64Image // Include base64Image if present
+        image: base64Image, // Include base64Image if present
+        video: videoBase64 // Include videoBlob if present
       }, {
         headers: {
           'X-CSRFToken': getCSRFToken() // Include CSRF token in the request headers
@@ -205,93 +222,6 @@ export default function HealthcareAIChatbot() {
           console.error('Error fetching chat response:', error);
           setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the chat response at the moment." }]);
           setIsLoadingChat(false); // Set loading to false on error
-        });
-    }
-
-
-    // First aid tab
-    if (tabContent === 'firstAid') {
-      console.log("firstAidMessages: matched");
-      setFirstAidMessages([...firstAidMessages, { role: 'user', content: firstAidInput }]);
-      setIsLoadingChatFirstAid(true); // Set loading to true when sending message
-      console.log("firstAidMessages: matched");
-      // Call the first aid suggestions API with JSON input
-      axios.post('http://localhost:8000/api/first-aid-suggestions/', {
-        query: firstAidInput,
-        reference_content: firstAidReference,
-        chat_messages: firstAidMessages
-      })
-        .then(response => {
-          const responseMessage = response.data.suggestion;
-          setFirstAidMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-
-          // Clear the input and image after sending
-          setFirstAidInput('');
-          setIsLoadingChatFirstAid(false); // Set loading to false after receiving response
-
-        })
-        .catch(error => {
-          console.error('Error fetching first aid suggestions:', error);
-          setFirstAidMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the first aid suggestions at the moment." }]);
-          setIsLoadingChatFirstAid(false); // Set loading to false on error
-        });
-    }
-
-
-    // Hospitals tab
-    if (tabContent === 'hospitals') {
-      console.log("hospitalMessages: matched");
-      setHospitalMessages([...hospitalMessages, { role: 'user', content: hospitalInput }]);
-      setIsLoadingChatHospitals(true); // Set loading to true when sending message
-
-      // Call the hospitals API with JSON input
-      axios.post('http://localhost:8000/api/hospitals_suggestions/', {
-        query: hospitalInput,
-        reference_content: hospitalReference,
-        chat_messages: hospitalMessages
-      })
-        .then(response => {
-          const responseMessage = response.data.suggestion; // Adjust based on actual response structure
-          setHospitalMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-
-          // Clear the input and image after sending
-          setHospitalInput('');
-          setIsLoadingChatHospitals(false); // Set loading to false after receiving response
-
-        })
-        .catch(error => {
-          console.error('Error fetching hospital information:', error);
-          setHospitalMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch hospital information at the moment." }]);
-          setIsLoadingChatHospitals(false); // Set loading to false on error
-        });
-    }
-
-
-    // Doctors tab
-    if (tabContent === 'doctors') {
-      console.log("doctorMessages: matched");
-      setDoctorMessages([...doctorMessages, { role: 'user', content: doctorInput }]);
-      setIsLoadingChatDoctors(true); // Set loading to true when sending message
-
-      // Call the doctors API with JSON input
-      axios.post('http://localhost:8000/api/doctors_suggestions/', {
-        query: doctorInput,
-        reference_content: doctorReference,
-        chat_messages: doctorMessages
-      })
-        .then(response => {
-          const responseMessage = response.data.suggestion; // Adjust based on actual response structure
-          setDoctorMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-
-          // Clear the input and image after sending
-          setDoctorInput('');
-          setIsLoadingChatDoctors(false); // Set loading to false after receiving response
-
-        })
-        .catch(error => {
-          console.error('Error fetching doctor information:', error);
-          setDoctorMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch doctor information at the moment." }]);
-          setIsLoadingChatDoctors(false); // Set loading to false on error
         });
     }
   }
