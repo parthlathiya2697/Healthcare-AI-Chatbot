@@ -20,9 +20,100 @@ import io
 from django.http import JsonResponse
 from .models import Hospital, Doctor
 import numpy as np
+import google.generativeai as genai
+
 
 @csrf_exempt
-def chat(request):
+def chat_gemini(request):
+
+    # Parse JSON body data
+    try:
+        data = json.loads(request.body)
+        user_input = data.get('query', '')
+        chat_messages = data.get('chat_messages', [])
+        image_data = data.get('image', None)  # Get the image if present
+        video_data = data.get('video', None)  # Get the video if present
+
+        # Save video data by converting frontend video blob to mp4 file
+        if video_data:
+            # Decode the base64 encoded video data
+            video_bytes = base64.b64decode(video_data.split(',')[1])
+
+            # Generate a unique filename for the video
+            video_filename = f"video_{uuid.uuid4()}.mp4"
+
+            # # Save the video to the desired location
+            # with open(os.path.join('./', video_filename), 'wb') as f:
+            #     f.write(video_bytes)
+
+            # # Update the video_data with the saved filename
+            # video_data = video_filename    
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    # Prepare the system message
+    system_message = "You are a helpful assistant. User Chat till this point: " + str(chat_messages)
+
+    # # Create a chat completion request
+    # if image_data and user_input:
+    #     print("Image and user input")
+    #     completion = client.chat.completions.create(
+    #             model="gpt-4o",
+    #             messages=[
+    #                 {
+    #                     "role": "user",
+    #                     "content": [
+    #                         {"type": "text", "text": f"Analyze this image_data and provide an answer to the users question i.e., {user_input}"},
+    #                         {"type": "image_url", "image_url": {"url": image_data}},
+    #                     ],
+    #                 },
+    #             ],
+    #         )
+    # elif image_data and not user_input:
+    #     print("Image and no user input")
+    #     completion = client.chat.completions.create(
+    #             model="gpt-4o",
+    #             messages=[
+    #                 {
+    #                     "role": "user",
+    #                     "content": [
+    #                         {"type": "text", "text": f"Analyze this image_data and provide a response"},
+    #                         {"type": "image_url", "image_url": {"url": image_data}},
+    #                     ],
+    #                 },
+    #             ],
+    #         )
+    # else:
+    #     print("No image and user input")
+    #     completion = client.chat.completions.create(
+    #         model="gpt-4o-mini",
+    #         messages=[
+    #             {"role": "system", "content": system_message},
+    #             {"role": "user", "content": user_input}
+    #         ],
+    #     )
+
+    # # Extract the response message
+    # response_message = completion.choices[0].message.content
+
+    # Return the response as JSON
+    # return JsonResponse({'response': response_message})
+    # return JsonResponse({'response': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
+    genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    content = system_message
+    response = model.generate_content(f'Continue this conversation with your answer. Reply in simple sentence and not in json: {content}')
+    response = response.text
+    return JsonResponse({'response': response})
+
+
+
+    
+
+
+@csrf_exempt
+def chat_openai(request):
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -102,8 +193,10 @@ def chat(request):
     return JsonResponse({'response': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
+
+
 @csrf_exempt
-def first_aid_suggestions(request):
+def first_aid_suggestions_openai(request):
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -134,7 +227,7 @@ def first_aid_suggestions(request):
 
 
 @csrf_exempt
-def hospitals_suggestions(request):
+def hospitals_suggestions_openai(request):
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -165,7 +258,7 @@ def hospitals_suggestions(request):
 
 
 @csrf_exempt
-def doctors_suggestions(request):
+def doctors_suggestions_openai(request):
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 

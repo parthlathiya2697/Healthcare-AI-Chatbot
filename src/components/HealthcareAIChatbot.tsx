@@ -67,6 +67,8 @@ export default function HealthcareAIChatbot() {
   const [isAudioDialogOpen, setIsAudioDialogOpen] = useState(false); // State for AudioDialog
   const [currentTab, setCurrentTab] = useState('chat');
 
+  const chatScrollRef = useRef<HTMLDivElement | null>(null); // Add ref for chat scroll area
+
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
   }, [])
@@ -198,7 +200,7 @@ export default function HealthcareAIChatbot() {
       const videoBase64 = videoBlob ?  await toBase64(videoBlob) : null; // Assuming you have a toBase64 function
 
       // Call the chat API endpoint
-      axios.post('http://localhost:8000/api/chat/', {
+      axios.post('http://localhost:8000/api/chat_gemini/', {
         query: chatInput,
         chat_messages: chatMessages,
         image: base64Image, // Include base64Image if present
@@ -216,6 +218,11 @@ export default function HealthcareAIChatbot() {
           setChatInput('');
           setBase64Image(null);
           setIsLoadingChat(false); // Set loading to false after receiving response
+
+          // Scroll to the bottom of the chat area
+          if (chatScrollRef.current) {
+            chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+          }
 
         })
         .catch(error => {
@@ -321,7 +328,7 @@ export default function HealthcareAIChatbot() {
               <TabsTrigger value="doctors"><User className="w-4 h-4 mr-2" />Doctors</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-              <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+              <ScrollArea className="h-[400px] w-full rounded-md border p-4" ref={chatScrollRef}> {/* Add ref to the ScrollArea */}
                 {chatMessages.map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                     <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
