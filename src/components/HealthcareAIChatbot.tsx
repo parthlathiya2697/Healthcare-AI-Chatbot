@@ -18,6 +18,7 @@ import CameraPanel from './CameraPanel'
 import VideoDialog from './VideoDialog';
 import ImageModal from './ImageModal';
 import AudioDialog from './AudioDialog';
+import ReactMarkdown from 'react-markdown';
 
 export default function HealthcareAIChatbot() {
 
@@ -202,9 +203,9 @@ export default function HealthcareAIChatbot() {
       setChatMessages([...chatMessages, { role: 'user', content: chatInput }]);
       setIsLoadingChat(true); // Set loading to true when sending message
 
-      
 
-      const videoBase64 = videoBlob ?  await toBase64(videoBlob) : null; // Assuming you have a toBase64 function
+
+      const videoBase64 = videoBlob ? await toBase64(videoBlob) : null; // Assuming you have a toBase64 function
 
       // Call the chat API endpoint
       axios.post('http://localhost:8000/api/chat_gemini/', {
@@ -340,11 +341,11 @@ export default function HealthcareAIChatbot() {
               <TabsTrigger value="doctors"><User className="w-4 h-4 mr-2" />Doctors</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-              <ScrollArea className="h-[400px] w-full rounded-md border p-4" ref={chatScrollRef}> {/* Add ref to the ScrollArea */}
+              <ScrollArea className="h-[400px] w-full rounded-md border p-4" ref={chatScrollRef}>
                 {chatMessages.map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                     <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                      {msg.content}
+                      <ReactMarkdown>{msg.content}</ReactMarkdown> {/* Use ReactMarkdown to render the content */}
                     </div>
                   </div>
                 ))}
@@ -406,8 +407,8 @@ export default function HealthcareAIChatbot() {
                   <span className="sr-only">Capture Image</span>
                 </Button>
                 <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className={`ml-2`}>
-                    <Mic className={`w-4 h-4`} />
-                    <span className="sr-only">Record audio</span>
+                  <Mic className={`w-4 h-4`} />
+                  <span className="sr-only">Record audio</span>
                 </Button>
                 <Button type="button" onClick={() => setIsVideoDialogOpen(true)} className="ml-2">
                   <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
@@ -711,11 +712,11 @@ export default function HealthcareAIChatbot() {
 
       {/* Audio Dialog */}
       <AudioDialog
-                isOpen={isAudioDialogOpen}
-                onClose={() => setIsAudioDialogOpen(false)}
-                onAudioRecorded={handleAudioRecorded}
-                onTextRecognized={handleTextRecognized} // Pass the handler for recognized text
-            />
+        isOpen={isAudioDialogOpen}
+        onClose={() => setIsAudioDialogOpen(false)}
+        onAudioRecorded={handleAudioRecorded}
+        onTextRecognized={handleTextRecognized} // Pass the handler for recognized text
+      />
     </>
   )
 }
