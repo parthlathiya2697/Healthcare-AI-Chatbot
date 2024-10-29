@@ -248,12 +248,26 @@ def chat_gemini(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    system_message = f"You are a helpful assistant. User Chat till this point: {chat_messages}."
+    system_message = f"You are a helpful assistant."
 
     genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
     model = genai.GenerativeModel("gemini-1.5-flash")
     content = system_message
-    response = model.generate_content(f'Continue this conversation with your answer with respect to the provided Relavant info. Reply in simple sentence and not in json: {content}.\n\n[ Relevant info: {relevant_document}]')
+    prompt = f"""
+                {system_message}
+
+                Below is the conversation history:
+                {chat_messages}
+
+                Based on the relevant information provided, continue the conversation as requested by the user. If you find anything from the relevant information, priotize that information.
+
+                Relevant Information:
+                {relevant_document}
+
+                Please provide your response below (do not output in JSON):
+                """
+
+    response = model.generate_content(prompt)
     response = response.text
     return JsonResponse({'response': response})
 

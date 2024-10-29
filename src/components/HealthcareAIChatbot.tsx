@@ -200,7 +200,7 @@ export default function HealthcareAIChatbot() {
       const videoBase64 = videoBlob ?  await toBase64(videoBlob) : null; // Assuming you have a toBase64 function
 
       // Call the chat API endpoint
-      axios.post('http://localhost:8000/api/chat_openai/', {
+      axios.post('http://localhost:8000/api/chat_gemini/', {
         query: chatInput,
         chat_messages: chatMessages,
         image: base64Image, // Include base64Image if present
