@@ -68,10 +68,17 @@ export default function HealthcareAIChatbot() {
   const [currentTab, setCurrentTab] = useState('chat');
 
   const chatScrollRef = useRef<HTMLDivElement | null>(null); // Add ref for chat scroll area
+  const chatInputRef = useRef<HTMLInputElement | null>(null); // Add ref for chat input
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
   }, [])
+
+  useEffect(() => {
+    if (chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  }, [chatInputRef.current]); // Add dependency on chatInputRef.current
 
   useEffect(() => {
     axios.post('http://localhost:8000/api/hospitals/', {
@@ -222,6 +229,11 @@ export default function HealthcareAIChatbot() {
           // Scroll to the bottom of the chat area
           if (chatScrollRef.current) {
             chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+          }
+
+
+          if (chatInputRef.current) { // Add this check
+            chatInputRef.current.focus();
           }
 
         })
@@ -383,6 +395,7 @@ export default function HealthcareAIChatbot() {
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           className="w-full"
+                          ref={chatInputRef} // Add ref to the input
                         />
                       </div>
                     </div>
@@ -706,3 +719,4 @@ export default function HealthcareAIChatbot() {
     </>
   )
 }
+
