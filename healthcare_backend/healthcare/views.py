@@ -1,26 +1,52 @@
-from django.shortcuts import render
+import PyPDF2
+import os, json
+import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-import os, json
 from openai import OpenAI
-import logging
-from pydub import AudioSegment
-import tempfile
-import audioread
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
-import openai
 
-import base64  # Import base64 module here
+import base64
 import uuid
-from django.core.files.uploadedfile import TemporaryUploadedFile
 import soundfile as sf
 import io
-# Create your views here.
 from django.http import JsonResponse
 from .models import Hospital, Doctor
-import numpy as np
 import google.generativeai as genai
+
+
+
+def create_vector_store():
+    # Create a vector store on server startup
+    pdf_folder = "./health_dataset"  # Replace with your actual PDF folder path
+    pdf_files = [os.path.join(pdf_folder, f) for f in os.listdir(pdf_folder) if f.endswith(".pdf")]
+
+    # Load and split PDF documents
+    loader = PyPDFLoader
+    documents = []
+    for pdf_file in pdf_files:
+        # Use the file path instead of the file object
+        with open(pdf_file, 'rb') as f:
+            loader = PyPDFLoader(pdf_file)  # Pass the file path here
+            documents.extend(loader.load())
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    texts = text_splitter.create_documents([doc.page_content for doc in documents])  # Extract page_content
+
+    # Create a vector store
+    embeddings = OpenAIEmbeddings()
+    global vector_store
+    vector_store = FAISS.from_documents(texts, embeddings)
+
+# Call the function to create the vector store on server startup
+create_vector_store()
+
+
 
 
 # @csrf_exempt
@@ -140,11 +166,16 @@ def chat_openai(request):
             # # Update the video_data with the saved filename
             # video_data = video_filename    
 
+        # Retrieve the most relevant document chunks
+        relevant_document = vector_store.similarity_search(user_input)
+
+        print(f'relevant_document: {relevant_document}')
+
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     # Prepare the system message
-    system_message = "You are a helpful assistant. User Chat till this point: " + str(chat_messages)
+    system_message = "You are a helpful assistant. \n\n[ Relevant info: {relevant_document}]. User Chat till this point: " + str(chat_messages)
 
     # # Create a chat completion request
     # if image_data and user_input:
@@ -193,9 +224,9 @@ def chat_openai(request):
     return JsonResponse({'response': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
-from .dataset import corpus_of_documents
-from .utils import return_response
 
+from langchain.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 @csrf_exempt
 def chat_gemini(request):
     try:
@@ -209,19 +240,20 @@ def chat_gemini(request):
             video_bytes = base64.b64decode(video_data.split(',')[1])
             video_filename = f"video_{uuid.uuid4()}.mp4"
 
-        # Retrieve the most relevant document
-        relevant_document = return_response(user_input, corpus_of_documents)
+        # Retrieve the most relevant document chunks
+        relevant_document = vector_store.similarity_search(user_input)
+
         print(f'relevant_document: {relevant_document}')
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    system_message = f"You are a helpful assistant. User Chat till this point: {chat_messages}. Relevant info: {relevant_document}"
+    system_message = f"You are a helpful assistant. User Chat till this point: {chat_messages}."
 
     genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
     model = genai.GenerativeModel("gemini-1.5-flash")
     content = system_message
-    response = model.generate_content(f'Continue this conversation with your answer. Reply in simple sentence and not in json: {content}')
+    response = model.generate_content(f'Continue this conversation with your answer with respect to the provided Relavant info. Reply in simple sentence and not in json: {content}.\n\n[ Relevant info: {relevant_document}]')
     response = response.text
     return JsonResponse({'response': response})
 
