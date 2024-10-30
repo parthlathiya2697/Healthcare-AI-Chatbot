@@ -242,6 +242,7 @@ def chat_gemini(request):
 
         # Retrieve the most relevant document chunks
         relevant_document = vector_store.similarity_search(user_input)
+        relevant_document = ''
 
         print(f'relevant_document: {relevant_document}')
 
@@ -264,12 +265,15 @@ def chat_gemini(request):
                 Relevant Document (for reference only):
                 {relevant_document}
 
-                Please provide your response below (do not output in JSON):
+                Note: Along with the current user medical condition related convervation, provide all possible preliminary First-Aid suggestions.
+
+                Please provide your response below (output in JSON (keys: response, firstaid). Do not inlude markup language in the response):
                 User: {user_input}
                 """
-
     response = model.generate_content(prompt)
-    response = response.text
+    response = response.text.replace("```json","").replace("```","").strip()
+    print(f'response: {response}')
+    response = json.loads(response)
     return JsonResponse({'response': response})
 
 

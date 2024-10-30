@@ -258,7 +258,9 @@ export default function HealthcareAIChatbot() {
       })
         .then(response => {
           const responseMessage = response.data.response;
-          setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+          console.log(`Received ${tabContent} response:`, responseMessage);
+          setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
+          setFirstAidReference(responseMessage.firstaid);
   
           // Clear the input and image after sending
           setInput('');
@@ -500,7 +502,6 @@ export default function HealthcareAIChatbot() {
                 <CardContent>
                   <h3 className="text-lg font-semibold">First AID</h3>
                   {firstAidReference}
-                  <p className="mt-4 text-sm text-muted-foreground">Always seek professional medical help for serious injuries or if you're unsure about the severity of the situation.</p>
                 </CardContent>
                 <CardFooter>
                   <form onSubmit={(e) => handleSendMessage(e, 'firstAid')} className="flex items-center w-full mt-4">
