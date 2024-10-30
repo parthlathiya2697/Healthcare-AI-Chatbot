@@ -68,8 +68,12 @@ export default function HealthcareAIChatbot() {
   const [isAudioDialogOpen, setIsAudioDialogOpen] = useState(false); // State for AudioDialog
   const [currentTab, setCurrentTab] = useState('chat');
 
-  const chatScrollRef = useRef<HTMLDivElement | null>(null); // Add ref for chat scroll area
   const chatInputRef = useRef<HTMLInputElement | null>(null); // Add ref for chat input
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const firstAidScrollRef = useRef<HTMLDivElement | null>(null);
+  const hospitalScrollRef = useRef<HTMLDivElement | null>(null);
+  const doctorScrollRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
@@ -192,56 +196,88 @@ export default function HealthcareAIChatbot() {
   }
 
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
-    console.log("tabContent: ", tabContent);
-    console.log("tabContent === 'firstAid': ", tabContent === 'firstAid');
     e.preventDefault();
-    // Chat tab
-    console.log("chatInput: ", chatInput);
-    console.log("base64Image: ", base64Image);
-    console.log("videoBlob: ", videoBlob);
-    if (tabContent === 'chat' && (chatInput.trim() !== '' || base64Image || videoBlob)) {
-      setChatMessages([...chatMessages, { role: 'user', content: chatInput }]);
-      setIsLoadingChat(true); // Set loading to true when sending message
-
-
-
-      const videoBase64 = videoBlob ? await toBase64(videoBlob) : null; // Assuming you have a toBase64 function
-
-      // Call the chat API endpoint
-      axios.post('http://localhost:8000/api/chat_gemini/', {
-        query: chatInput,
-        chat_messages: chatMessages,
-        image: base64Image, // Include base64Image if present
-        video: videoBase64 // Include videoBlob if present
+    let input = '';
+    let setInput = () => {};
+    let setMessages = () => {};
+    let setIsLoading = () => {};
+    let messages = [];
+  
+    // Determine which tab is active and set the corresponding state functions
+    switch (tabContent) {
+      case 'chat':
+        input = chatInput;
+        setInput = setChatInput;
+        setMessages = setChatMessages;
+        setIsLoading = setIsLoadingChat;
+        messages = chatMessages;
+        break;
+      case 'firstAid':
+        input = firstAidInput;
+        setInput = setFirstAidInput;
+        setMessages = setFirstAidMessages;
+        setIsLoading = setIsLoadingChatFirstAid;
+        messages = firstAidMessages;
+        break;
+      case 'hospitals':
+        input = hospitalInput;
+        setInput = setHospitalInput;
+        setMessages = setHospitalMessages;
+        setIsLoading = setIsLoadingChatHospitals;
+        messages = hospitalMessages;
+        break;
+      case 'doctors':
+        input = doctorInput;
+        setInput = setDoctorInput;
+        setMessages = setDoctorMessages;
+        setIsLoading = setIsLoadingChatDoctors;
+        messages = doctorMessages;
+        break;
+      default:
+        return;
+    }
+  
+    if (input.trim() !== '' || base64Image || videoBlob) {
+      setMessages([...messages, { role: 'user', content: input }]);
+      setIsLoading(true);
+  
+      const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
+  
+      // Call the appropriate API endpoint based on the tab
+      const apiEndpoint = `http://localhost:8000/api/chat_gemini/`;
+  
+      axios.post(apiEndpoint, {
+        query: input,
+        chat_messages: messages,
+        image: base64Image,
+        video: videoBase64
       }, {
         headers: {
-          'X-CSRFToken': getCSRFToken() // Include CSRF token in the request headers
+          'X-CSRFToken': getCSRFToken()
         }
       })
         .then(response => {
           const responseMessage = response.data.response;
-          setChatMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-
+          setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+  
           // Clear the input and image after sending
-          setChatInput('');
+          setInput('');
           setBase64Image(null);
-          setIsLoadingChat(false); // Set loading to false after receiving response
-
+          setIsLoading(false);
+  
           // Scroll to the bottom of the chat area
           if (chatScrollRef.current) {
             chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
           }
-
-
-          if (chatInputRef.current) { // Add this check
+  
+          if (chatInputRef.current) {
             chatInputRef.current.focus();
           }
-
         })
         .catch(error => {
-          console.error('Error fetching chat response:', error);
-          setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't fetch the chat response at the moment." }]);
-          setIsLoadingChat(false); // Set loading to false on error
+          console.error(`Error fetching ${tabContent} response:`, error);
+          setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't fetch the ${tabContent} response at the moment.` }]);
+          setIsLoading(false);
         });
     }
   }
@@ -325,6 +361,38 @@ export default function HealthcareAIChatbot() {
   }
 
 
+  // Automatically scrolls to the bottom of the chat
+  const scrollToBottom = (scrollRef) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Chat tab auto-scrolling
+  useEffect(() => {
+    scrollToBottom(chatScrollRef);
+  }, [chatMessages]);
+
+  // First Aid tab auto-scrolling
+  useEffect(() => {
+    scrollToBottom(firstAidScrollRef);
+  }, [firstAidMessages]);
+
+  // Hospitals tab auto-scrolling
+  useEffect(() => {
+    scrollToBottom(hospitalScrollRef);
+  }, [hospitalMessages]);
+
+  // Doctors tab auto-scrolling
+  useEffect(() => {
+    scrollToBottom(doctorScrollRef);
+  }, [doctorMessages]);
+
+
+
   return (
     <>
       <Card className="w-full mainC">
@@ -341,15 +409,16 @@ export default function HealthcareAIChatbot() {
               <TabsTrigger value="doctors"><User className="w-4 h-4 mr-2" />Doctors</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-              <ScrollArea className="h-[400px] w-full rounded-md border p-4" ref={chatScrollRef}>
+              <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto" ref={chatScrollRef}>
                 {chatMessages.map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                     <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                      <ReactMarkdown>{msg.content}</ReactMarkdown> {/* Use ReactMarkdown to render the content */}
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                   </div>
                 ))}
-              </ScrollArea>
+              </div>
+
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
                 <div className="flex items-start w-full border rounded p-2" style={{ minHeight: '4rem' }}> {/* Adjusted for flexible height */}
                   {isLoadingChat ? (
@@ -455,18 +524,15 @@ export default function HealthcareAIChatbot() {
                 </CardFooter>
               </Card>
               {firstAidMessages.length > 0 && (
-                <>
-                  <br />Your chat gets displayed below<br />
-                  <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                    {firstAidMessages.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
-                        <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                          {msg.content}
-                        </div>
+                <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={firstAidScrollRef}>
+                  {firstAidMessages.map((msg, index) => (
+                    <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                      <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                        {msg.content}
                       </div>
-                    ))}
-                  </ScrollArea>
-                </>
+                    </div>
+                  ))}
+                </div>
               )}
             </TabsContent>
             <TabsContent value="hospitals">
@@ -551,18 +617,15 @@ export default function HealthcareAIChatbot() {
                 </Card>
               )}
               {hospitalMessages.length > 0 && (
-                <>
-                  <br />Your chat gets displayed below<br />
-                  <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                    {hospitalMessages.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
-                        <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                          {msg.content}
-                        </div>
+                <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={hospitalScrollRef}>
+                  {hospitalMessages.map((msg, index) => (
+                    <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                      <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                        {msg.content}
                       </div>
-                    ))}
-                  </ScrollArea>
-                </>
+                    </div>
+                  ))}
+                </div>
               )}
             </TabsContent>
             <TabsContent value="doctors">
@@ -656,18 +719,15 @@ export default function HealthcareAIChatbot() {
                 </Card>
               )}
               {doctorMessages.length > 0 && (
-                <>
-                  <br />Your chat gets displayed below<br />
-                  <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                    {doctorMessages.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
-                        <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                          {msg.content}
-                        </div>
+                <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={doctorScrollRef}>
+                  {doctorMessages.map((msg, index) => (
+                    <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                      <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                        {msg.content}
                       </div>
-                    ))}
-                  </ScrollArea>
-                </>
+                    </div>
+                  ))}
+                </div>
               )}
             </TabsContent>
           </Tabs>
