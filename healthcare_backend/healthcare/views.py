@@ -259,12 +259,13 @@ def chat_gemini(request):
                 Below is the conversation history:
                 {chat_messages}
 
-                Based on the relevant information provided, continue the conversation as requested by the user. If you find anything from the relevant information, priotize that information.
+                Continue the conversation based on the user's request. Prioritize responding directly to the user’s question, using the relevant document only if it is necessary to provide additional context or clarification.
 
-                Relevant Information:
+                Relevant Document (for reference only):
                 {relevant_document}
 
                 Please provide your response below (do not output in JSON):
+                User: {user_input}
                 """
 
     response = model.generate_content(prompt)
