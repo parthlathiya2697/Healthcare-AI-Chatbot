@@ -10,4 +10,5 @@ urlpatterns = [
     path('hospitals/', views.hospital_list, name='hospital_list'),
     path('doctors/', views.doctor_list, name='doctor_list'),
     path('translate_audio/', views.translate_audio, name='translate_audio'),
+    path('fetch_and_store_hospitals/', views.fetch_and_store_hospitals, name='fetch_and_store_hospitals'),
 ]

@@ -568,7 +568,7 @@ export default function HealthcareAIChatbot() {
                       {sortedHospitals.map(hospital => (
                         <li key={hospital.id} className="flex items-start space-x-4 p-4 rounded-lg hover:bg-gray-100">
                           <div className={`w-3 h-3 rounded-full mt-1 ${hospital.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
-                          <img src={hospital.image} alt={hospital.name} className="w-24 h-16 object-cover rounded" />
+                          <img src={hospital.thumbnail} alt={hospital.name} className="w-24 h-16 object-cover rounded" />
                           <div className="flex-grow">
                             <h3 className="font-semibold">{hospital.name}</h3>
                             <p className="text-sm text-muted-foreground">{hospital.address}</p>

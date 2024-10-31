@@ -6,7 +6,8 @@ from django.views.decorators.http import require_POST
 from openai import OpenAI
 from langchain.vectorstores import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.document_loaders import PyPDFLoader
+# from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,14 @@ from .models import Hospital, Doctor
 import google.generativeai as genai
 
 
+import random
+def get_staff_behavior(hospital):
+    # Your logic to extract staff behavior score
+    return 1
+
+def get_treatment_score(hospital):
+    # Your logic to extract treatment score
+    return 1
 
 def create_vector_store():
     # Create a vector store on server startup
@@ -225,7 +234,8 @@ def chat_openai(request):
 
 
 
-from langchain.document_loaders import PyPDFLoader
+# from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 @csrf_exempt
 def chat_gemini(request):
@@ -454,3 +464,86 @@ def translate_audio(request):
     #     return JsonResponse({'error': 'No audio file provided'}, status=400)
 
     return JsonResponse({'text': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
+
+
+# Import necessary modules
+import requests
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Hospital  # Assuming you have a Hospital model
+
+
+@csrf_exempt
+def fetch_and_store_hospitals(request):
+    if request.method == 'POST':
+        try:
+            # Parse the request body to get location data
+            data = json.loads(request.body)
+            location = data.get('location', '')
+
+            # Use SERP API to fetch hospital data
+            params = {
+                "engine": "google_maps",
+                "q": "hospitals",
+                "address": location,
+                "api_key": os.environ['SERP_API_KEY']
+            }
+            response = requests.get("https://serpapi.com/search", params=params)
+            results = response.json()
+
+            # Check if the response contains hospital data
+            if 'local_results' in results:
+                hospitals = results['local_results']
+                # Iterate over the hospital data and save it to the database
+                for hospital in hospitals:
+                    reviews_link = hospital.get('reviews_link', '')
+                    gps_coordinates = hospital.get('gps_coordinates', {})
+                    rating = hospital.get('rating', 0)
+                    reviews = hospital.get('reviews', 0)
+                    hospital_type = hospital.get('type', '')
+                    is_open = hospital.get('open_state', '')
+                    hours = hospital.get('hours', '')
+                    operating_hours = hospital.get('operating_hours', {})
+                    phone = hospital.get('phone', '')
+                    website = hospital.get('website', '')
+                    user_review = hospital.get('user_review', '')
+                    thumbnail = hospital.get('thumbnail', '')
+                    distance = hospital.get('distance', 0)
+
+
+                    staff_behavior = get_staff_behavior(hospital)
+                    treatment_score = get_treatment_score(hospital)
+                    
+
+                    Hospital.objects.create(
+                        name=hospital.get('title'),
+                        address=hospital.get('address'),
+                        longitude=hospital.get('gps_coordinates', {}).get('longitude'),
+                        latitude=hospital.get('gps_coordinates', {}).get('latitude'),
+                        gps_coordinates=gps_coordinates,
+                        rating=rating,
+                        reviews=reviews,
+                        reviews_link=reviews_link,
+                        hospital_type=hospital_type,
+                        is_open=True if 'open' in is_open.lower() else False,
+                        comfort=hospital.get('comfort', 0),
+                        hours=hours,
+                        operating_hours=operating_hours,
+                        phone=phone,
+                        website=website,
+                        user_review=user_review,
+                        thumbnail=thumbnail,
+                        distance=distance,
+
+                        staff_behavior= staff_behavior,
+                        treatment_score=treatment_score,
+                    )
+
+                return JsonResponse({'status': 'success', 'message': 'Hospitals data stored successfully.'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'No hospital data found.'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
