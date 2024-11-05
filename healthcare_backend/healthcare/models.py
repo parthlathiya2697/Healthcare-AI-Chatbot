@@ -27,15 +27,25 @@ class Hospital(models.Model):
     def __str__(self):
         return self.name
 
+
+
 class Doctor(models.Model):
-    name = models.CharField(max_length=255)
-    specialty = models.CharField(max_length=255)
-    rating = models.FloatField()
-    availability = models.JSONField()
-    behavior = models.FloatField()
-    expertise = models.FloatField()
-    feedback_sentiment = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20)
+    name = models.CharField(max_length=255, default='')
+    specialty = models.CharField(max_length=255, default='')
+    rating = models.FloatField(default=0.0)
+    availability = models.JSONField(default=dict)
+    behavior = models.FloatField(default=0.0)
+    expertise = models.FloatField(default=0.0)
+    feedback_sentiment = models.CharField(max_length=255, default='')
+    phone = models.CharField(max_length=20, default='')
+
+    hospital_longitude = models.FloatField(default=0.0)
+    hospital_latitude = models.FloatField(default=0.0)
+    hospital_name = models.CharField(max_length=255, default='')
+    hospital_website = models.CharField(max_length=255, default='')
+
+    class Meta:
+        unique_together = ('name', 'hospital_longitude', 'hospital_latitude')
 
     def __str__(self):
         return self.name

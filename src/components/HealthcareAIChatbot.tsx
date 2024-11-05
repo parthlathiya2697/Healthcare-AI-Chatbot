@@ -80,6 +80,25 @@ export default function HealthcareAIChatbot() {
   }, [])
 
   useEffect(() => {
+    if (hospitalReference && Array.isArray(hospitalReference)) {
+
+      // Call the doctors API with the hospital names
+      axios.post('http://localhost:8000/api/doctors/', {
+        hospital_names: hospitalReference.map(hospital => hospital.name) // Extract hospital names
+      })
+        .then(response => {
+          setDoctors(response.data);
+          setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
+          setIsLoadingDoctors(false);
+        })
+        .catch(error => {
+          console.error('Error fetching doctors:', error);
+          setIsLoadingDoctors(false);
+        });
+    }
+  }, [hospitalReference]);
+
+  useEffect(() => {
     if (chatInputRef.current) {
       chatInputRef.current.focus();
     }
@@ -91,8 +110,9 @@ export default function HealthcareAIChatbot() {
       reference_content: hospitalReference
     })
       .then(response => {
-        setHospitals(response.data);
-        setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
+        // append response hospital data to current hospital data 
+        setHospitals([...hospitals, ...response.data]);
+        setHospitalReference(response.data);
         setIsLoadingHospitals(false);
       })
       .catch(error => {
@@ -101,11 +121,14 @@ export default function HealthcareAIChatbot() {
       });
   }, []);
 
+  useEffect(()=> {
+    console.log("hospitals: ", hospitals)
 
-  useEffect(() => {
+    // fetch doctors for each hospital  by passing all hospital names
     axios.post('http://localhost:8000/api/doctors/', {
       query: 'Some query for doctors',
-      reference_content: doctorReference
+      reference_content: doctorReference,
+      hospital_names: hospitals.map(hospital => hospital.name) // Extract hospital names
     })
       .then(response => {
         setDoctors(response.data);
@@ -116,7 +139,28 @@ export default function HealthcareAIChatbot() {
         console.error('Error fetching doctors:', error);
         setIsLoadingDoctors(false);
       });
-  }, []);
+  }, [hospitals])
+
+  useEffect(() => {
+    console.log("doctors: ", doctors)
+  }, [doctors])
+
+
+  // useEffect(() => {
+  //   axios.post('http://localhost:8000/api/doctors/', {
+  //     query: 'Some query for doctors',
+  //     reference_content: doctorReference
+  //   })
+  //     .then(response => {
+  //       setDoctors(response.data);
+  //       setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
+  //       setIsLoadingDoctors(false);
+  //     })
+  //     .catch(error => {
+  //       console.error('Error fetching doctors:', error);
+  //       setIsLoadingDoctors(false);
+  //     });
+  // }, []);
 
   async function toBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -198,11 +242,11 @@ export default function HealthcareAIChatbot() {
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
     e.preventDefault();
     let input = '';
-    let setInput = () => {};
-    let setMessages = () => {};
-    let setIsLoading = () => {};
+    let setInput = () => { };
+    let setMessages = () => { };
+    let setIsLoading = () => { };
     let messages = [];
-  
+
     // Determine which tab is active and set the corresponding state functions
     switch (tabContent) {
       case 'chat':
@@ -236,16 +280,16 @@ export default function HealthcareAIChatbot() {
       default:
         return;
     }
-  
+
     if (input.trim() !== '' || base64Image || videoBlob) {
       setMessages([...messages, { role: 'user', content: input }]);
       setIsLoading(true);
-  
+
       const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
-  
+
       // Call the appropriate API endpoint based on the tab
       const apiEndpoint = `http://localhost:8000/api/chat_gemini/`;
-  
+
       axios.post(apiEndpoint, {
         query: input,
         chat_messages: messages,
@@ -261,19 +305,36 @@ export default function HealthcareAIChatbot() {
           console.log(`Received ${tabContent} response:`, responseMessage);
           setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
           setFirstAidReference(responseMessage.firstaid);
-  
+
           // Clear the input and image after sending
           setInput('');
           setBase64Image(null);
           setIsLoading(false);
-  
+
           // Scroll to the bottom of the chat area
           if (chatScrollRef.current) {
             chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
           }
-  
+
           if (chatInputRef.current) {
             chatInputRef.current.focus();
+          }
+
+          // Now get hospitals and doctors
+          if (tabContent === 'chat') {
+            axios.post('http://localhost:8000/api/hospitals/', {
+              query: 'Some query for hospitals',
+              reference_content: hospitalReference
+            })
+              .then(response => {
+                setHospitals(response.data);
+                setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
+                setIsLoadingHospitals(false);
+              })
+              .catch(error => {
+                console.error('Error fetching hospitals:', error);
+                setIsLoadingHospitals(false);
+              });
           }
         })
         .catch(error => {
@@ -501,7 +562,7 @@ export default function HealthcareAIChatbot() {
                 </CardHeader>
                 <CardContent>
                   <h3 className="text-lg font-semibold">First AID</h3>
-                  {firstAidReference}
+                  <ReactMarkdown>{firstAidReference}</ReactMarkdown>
                 </CardContent>
                 <CardFooter>
                   <form onSubmit={(e) => handleSendMessage(e, 'firstAid')} className="flex items-center w-full mt-4">
@@ -644,19 +705,19 @@ export default function HealthcareAIChatbot() {
                       {doctors.map(doctor => (
                         <li key={doctor.id}>
                           <Card className="mb-4">
-                            <CardHeader className="flex flex-row items-center justify-between">
+                            <CardContent className="flex flex-row items-center justify-between">
                               <div>
                                 <CardTitle>{doctor.name}</CardTitle>
-                                <CardDescription>{doctor.specialty}</CardDescription>
+                                <CardDescription>{doctor.specialty ? `${doctor.specialty} | ` : ''} <a href={doctor.hospital_website}>{doctor.hospital_name}</a></CardDescription>
                               </div>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSelectedDoctor(selectedDoctor?.id === doctor.id ? null : doctor)}
                               >
-                                {selectedDoctor?.id === doctor.id ? 'Hide Details' : 'More Details'}
+                                <b>{selectedDoctor?.id === doctor.id ? 'Hide Details' : 'More Details'}</b>
                               </Button>
-                            </CardHeader>
+                            </CardContent>
                             <CardContent>
                               <div className="flex items-center justify-between mb-2">
                                 <p className="text-sm text-muted-foreground flex items-center">
@@ -671,10 +732,10 @@ export default function HealthcareAIChatbot() {
                               <div className="mt-2">
                                 <p className="text-sm font-medium mb-1">Availability Today:</p>
                                 <div className="flex space-x-1">
-                                  {Array.from({ length: 12 }, (_, i) => i + 8).map(hour => (
+                                  {Array.from({ length: 24 }, (_, i) => i).map(hour => (
                                     <div
                                       key={hour}
-                                      className={`w-6 h-6 flex items-center justify-center text-xs ${doctor.availability.includes(hour)
+                                      className={`w-6 h-6 flex items-center justify-center text-xs ${Array.isArray(doctor.availability) && doctor.availability.includes(hour)
                                         ? 'bg-green-500 text-white'
                                         : 'bg-gray-200 text-gray-500'
                                         }`}

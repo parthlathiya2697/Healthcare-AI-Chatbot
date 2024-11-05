@@ -11,6 +11,9 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
+import requests
+from bs4 import BeautifulSoup
+import re
 
 import base64
 import uuid
@@ -390,7 +393,16 @@ def hospital_list(request):
 
 @csrf_exempt
 def doctor_list(request):
-    doctors = list(Doctor.objects.values())
+    # Parse JSON body data
+    try:
+        data = json.loads(request.body)
+        hospital_names = data.get('hospital_names', [])
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    # Filter doctors based on hospital names
+    doctors = list(Doctor.objects.filter(hospital_name__in=hospital_names).values())
+    # breakpoint()
     return JsonResponse(doctors, safe=False)
 
 def convert_to_wav(input_audio_file):
@@ -472,6 +484,104 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Hospital  # Assuming you have a Hospital model
 
+def extract_doctor_info(text) : 
+
+    print(f'\nextract_doctor_info')
+
+    genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    prompt = f"""
+                Please provide your response below (output in list of JSON like [dict <doctor info>, dict >doctor2 info> ,...]. Do not inlude markup language in the response):
+                Needed info: name, specialty, rating, availability(dict of hours like [6,7,8,9]), phone_number
+                Input: {text}
+                """
+    response = model.generate_content(prompt)
+    response = response.text.replace("```json","").replace("```","").strip()
+    response = json.loads(response)
+    return response
+
+
+def fetch_doctors(hospital_name, location):
+
+    print(f'\nfetch_doctors')
+
+    # from serpapi import GoogleSearch
+    query = f"{hospital_name} doctors {location}"
+
+    # First, perform a search to get a list of doctors
+    params = {
+        "engine": "google",
+        "q": query,
+        "api_key": os.environ['SERP_API_KEY'],
+        "type": "search",
+    }
+
+    # Use requests to get the results
+    print(f'Doing google serp')
+    response = requests.get("https://serpapi.com/search", params=params)
+    results = response.json()
+    # with open(f'results_{query}.json', 'w') as f:
+    #     json.dump(results, f)
+    # with open("results_Intermountain Medical Center doctors surat.json") as f:
+    #     results = json.load(f)
+    
+    doctors = []
+
+    if 'organic_results' in results:
+        organic_results = results['organic_results']
+        parsed_organic_results = [ 
+                {
+                    'title' : result.get('title', ''),
+                    'snippet' : result.get('snippet', ''),
+                }
+                for result in organic_results
+            ]
+        doctors_info_list = extract_doctor_info(str(parsed_organic_results))
+        for doctors_info in doctors_info_list:
+            doctor = {}
+            doctor['name'] = doctors_info.get('name', '') if doctors_info.get('name', '') else ''
+            doctor['specialty'] = doctors_info.get('specialty', '') if doctors_info.get('specialty', '') else ''
+            doctor['rating'] = float(doctors_info.get('rating', 0.0)) if doctors_info.get('rating', 0.0) else 0.0
+            doctor['availability'] = doctors_info.get('availability', {}) if doctors_info.get('availability', {}) else {}
+            doctor['phone'] = doctors_info.get('phone_number', '') if doctors_info.get('phone_number', '') else ''
+
+            # Analyze reviews for sentiment, behavior, and expertise
+            reviews = doctors_info.get('reviews', [])
+            sentiments = []
+            behavior_scores = []
+            expertise_scores = []
+
+            for review in reviews:
+                text = review.get('snippet', '')
+                rating = review.get('rating', 0)
+
+                # Placeholder sentiment analysis based on rating
+                if rating >= 4:
+                    sentiments.append(1)
+                elif rating <= 2:
+                    sentiments.append(-1)
+                else:
+                    sentiments.append(0)
+
+                # Placeholder for behavior and expertise scores
+                behavior_scores.append(rating)
+                expertise_scores.append(rating)
+
+            if sentiments:
+                avg_sentiment = sum(sentiments) / len(sentiments)
+                doctor['feedback_sentiment'] = (
+                    'positive' if avg_sentiment > 0 else 'negative' if avg_sentiment < 0 else 'neutral'
+                )
+                doctor['behavior'] = sum(behavior_scores) / len(behavior_scores)
+                doctor['expertise'] = sum(expertise_scores) / len(expertise_scores)
+            else:
+                doctor['feedback_sentiment'] = ''
+                doctor['behavior'] = 0.0
+                doctor['expertise'] = 0.0
+
+            doctors.append(doctor)
+
+    return doctors
 
 @csrf_exempt
 def fetch_and_store_hospitals(request):
@@ -489,12 +599,15 @@ def fetch_and_store_hospitals(request):
                 "api_key": os.environ['SERP_API_KEY']
             }
             response = requests.get("https://serpapi.com/search", params=params)
+            with open(f'results_{location}.json', 'w') as f:
+                json.dump(response.json(), f)
             results = response.json()
 
             # Check if the response contains hospital data
             if 'local_results' in results:
-                hospitals = results['local_results']
+                hospitals = results['local_results'][:1]  # Todo Remove limit of 2
                 # Iterate over the hospital data and save it to the database
+                hospital_and_doctors = []
                 for hospital in hospitals:
                     reviews_link = hospital.get('reviews_link', '')
                     gps_coordinates = hospital.get('gps_coordinates', {})
@@ -538,6 +651,35 @@ def fetch_and_store_hospitals(request):
                         staff_behavior= staff_behavior,
                         treatment_score=treatment_score,
                     )
+
+
+                    # Get hospital website link
+                    website = hospital.get('website', '')
+
+                    # Crawl all pages from robots.txt file and save in json structure
+                    if website:
+                        _list = fetch_doctors(hospital.get('title'), location)
+                        hospital_and_doctors.append({
+                            'hospital': hospital,
+                            'doctors': _list
+                        })
+
+                        # Store the doctors data in the database
+                        for doctor in _list:
+                            Doctor.objects.create(
+                                name=doctor.get('name'),
+                                specialty=doctor.get('specialty'),
+                                rating=doctor.get('rating'),
+                                availability=doctor.get('availability'),
+                                behavior=doctor.get('behavior'),
+                                expertise=doctor.get('expertise'),
+                                feedback_sentiment=doctor.get('feedback_sentiment'),
+                                phone=doctor.get('phone'),
+                                hospital_longitude = hospital.get('gps_coordinates', {}).get('longitude'),
+                                hospital_latitude = hospital.get('gps_coordinates', {}).get('latitude'),
+                                hospital_name = hospital.get('title'),
+                                hospital_website = website,
+                            )
 
                 return JsonResponse({'status': 'success', 'message': 'Hospitals data stored successfully.'})
             else:
