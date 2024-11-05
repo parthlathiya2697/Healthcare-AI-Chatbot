@@ -76,27 +76,27 @@ export default function HealthcareAIChatbot() {
 
 
   useEffect(() => {
-    setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance. Whether you're dealing with minor injuries, medical emergencies, or general health concerns, I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
+    setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance based on your current chat in the main chat section. Whether you're dealing with minor injuries, medical emergencies, or general health concerns. I can also help you what medicines is prescribed to you and why. I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
   }, [])
 
-  useEffect(() => {
-    if (hospitalReference && Array.isArray(hospitalReference)) {
+  // useEffect(() => {
+  //   if (hospitalReference && Array.isArray(hospitalReference)) {
 
-      // Call the doctors API with the hospital names
-      axios.post('http://localhost:8000/api/doctors/', {
-        hospital_names: hospitalReference.map(hospital => hospital.name) // Extract hospital names
-      })
-        .then(response => {
-          setDoctors(response.data);
-          setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
-          setIsLoadingDoctors(false);
-        })
-        .catch(error => {
-          console.error('Error fetching doctors:', error);
-          setIsLoadingDoctors(false);
-        });
-    }
-  }, [hospitalReference]);
+  //     // Call the doctors API with the hospital names
+  //     axios.post('http://localhost:8000/api/doctors/', {
+  //       hospital_names: hospitalReference.map(hospital => hospital.name) // Extract hospital names
+  //     })
+  //       .then(response => {
+  //         setDoctors(response.data);
+  //         setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
+  //         setIsLoadingDoctors(false);
+  //       })
+  //       .catch(error => {
+  //         console.error('Error fetching doctors:', error);
+  //         setIsLoadingDoctors(false);
+  //       });
+  //   }
+  // }, [hospitalReference]);
 
   useEffect(() => {
     if (chatInputRef.current) {
