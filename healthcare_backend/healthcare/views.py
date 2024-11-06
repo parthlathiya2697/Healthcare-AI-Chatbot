@@ -389,21 +389,85 @@ def doctors_suggestions_openai(request):
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.db.models import F
+from django.db.models import F, FloatField
+from django.db.models.functions import Sqrt
+from django.db.models import F, FloatField
+from django.db.models.functions import Sqrt
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 @csrf_exempt
 def hospital_list(request):
-    hospitals = Hospital.objects.all()
-    paginator = Paginator(hospitals, 10)  # Show 10 hospitals per page
+    try:
+        data = json.loads(request.body)
+        query = data.get('query', '')
+        reference_content = data.get('reference_content', '')
+        user_longitude = data.get('longitude', None)
+        user_latitude = data.get('latitude', None)
 
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+        if user_longitude is None or user_latitude is None:
+            return JsonResponse({'error': 'User location not provided'}, status=400)
 
-    hospitals_data = list(page_obj.object_list.values())
-    return JsonResponse({
-        'hospitals': hospitals_data,
-        'page': page_obj.number,
-        'total_pages': paginator.num_pages
-    }, safe=False)
+        # Calculate the approximate distance using the Pythagorean theorem
+        hospitals = Hospital.objects.annotate(
+            proximity=Sqrt(
+                (F('longitude') - user_longitude) ** 2 + (F('latitude') - user_latitude) ** 2,
+                output_field=FloatField()
+            )
+        ).order_by('proximity')
+
+        paginator = Paginator(hospitals, 10)  # Show 10 hospitals per page
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        hospitals_data = list(page_obj.object_list.values())
+        return JsonResponse({
+            'hospitals': hospitals_data,
+            'page': page_obj.number,
+            'total_pages': paginator.num_pages
+        }, safe=False)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+@csrf_exempt
+def fetch_and_store_hospitals(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            query = data.get('query', '')
+            reference_content = data.get('reference_content', '')
+            location = data.get('location', '')
+
+            # Use SERP API to fetch hospital data
+            params = {
+                "engine": "google_maps",
+                "q": "hospitals",
+                "address": location,
+                "api_key": os.environ['SERP_API_KEY']
+            }
+            response = requests.get("https://serpapi.com/search", params=params)
+            results = response.json()
+
+            if 'local_results' in results:
+                hospitals = results['local_results']
+                for hospital in hospitals:
+                    Hospital.objects.create(
+                        name=hospital.get('title'),
+                        address=hospital.get('address'),
+                        longitude=hospital.get('gps_coordinates', {}).get('longitude'),
+                        latitude=hospital.get('gps_coordinates', {}).get('latitude'),
+                        # ... other fields ...
+                    )
+                return JsonResponse({'status': 'success', 'message': 'Hospitals data stored successfully.'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'No hospital data found.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
+
 
 @csrf_exempt
 def doctor_list(request):
@@ -611,110 +675,3 @@ def fetch_doctors(hospital_name, location):
             doctors.append(doctor)
 
     return doctors
-
-@csrf_exempt
-def fetch_and_store_hospitals(request):
-    if request.method == 'POST':
-        try:
-            # Parse the request body to get location data
-            data = json.loads(request.body)
-            location = data.get('location', '')
-
-            # Use SERP API to fetch hospital data
-            params = {
-                "engine": "google_maps",
-                "q": "hospitals",
-                "address": location,
-                "api_key": os.environ['SERP_API_KEY']
-            }
-            response = requests.get("https://serpapi.com/search", params=params)
-            with open(f'results_{location}.json', 'w') as f:
-                json.dump(response.json(), f)
-            results = response.json()
-
-            # Check if the response contains hospital data
-            if 'local_results' in results:
-                hospitals = results['local_results'][:1]  # Todo Remove limit of 2
-                # Iterate over the hospital data and save it to the database
-                hospital_and_doctors = []
-                for hospital in hospitals:
-                    reviews_link = hospital.get('reviews_link', '')
-                    gps_coordinates = hospital.get('gps_coordinates', {})
-                    rating = hospital.get('rating', 0)
-                    reviews = hospital.get('reviews', 0)
-                    hospital_type = hospital.get('type', '')
-                    is_open = hospital.get('open_state', '')
-                    hours = hospital.get('hours', '')
-                    operating_hours = hospital.get('operating_hours', {})
-                    phone = hospital.get('phone', '')
-                    website = hospital.get('website', '')
-                    user_review = hospital.get('user_review', '')
-                    thumbnail = hospital.get('thumbnail', '')
-                    distance = hospital.get('distance', 0)
-
-
-                    staff_behavior = get_staff_behavior(hospital)
-                    treatment_score = get_treatment_score(hospital)
-                    
-
-                    Hospital.objects.create(
-                        name=hospital.get('title'),
-                        address=hospital.get('address'),
-                        longitude=hospital.get('gps_coordinates', {}).get('longitude'),
-                        latitude=hospital.get('gps_coordinates', {}).get('latitude'),
-                        gps_coordinates=gps_coordinates,
-                        rating=rating,
-                        reviews=reviews,
-                        reviews_link=reviews_link,
-                        hospital_type=hospital_type,
-                        is_open=True if 'open' in is_open.lower() else False,
-                        comfort=hospital.get('comfort', 0),
-                        hours=hours,
-                        operating_hours=operating_hours,
-                        phone=phone,
-                        website=website,
-                        user_review=user_review,
-                        thumbnail=thumbnail,
-                        distance=distance,
-
-                        staff_behavior= staff_behavior,
-                        treatment_score=treatment_score,
-                    )
-
-
-                    # Get hospital website link
-                    website = hospital.get('website', '')
-
-                    # Crawl all pages from robots.txt file and save in json structure
-                    if website:
-                        _list = fetch_doctors(hospital.get('title'), location)
-                        hospital_and_doctors.append({
-                            'hospital': hospital,
-                            'doctors': _list
-                        })
-
-                        # Store the doctors data in the database
-                        for doctor in _list:
-                            Doctor.objects.create(
-                                name=doctor.get('name'),
-                                specialty=doctor.get('specialty'),
-                                rating=doctor.get('rating'),
-                                availability=doctor.get('availability'),
-                                behavior=doctor.get('behavior'),
-                                expertise=doctor.get('expertise'),
-                                feedback_sentiment=doctor.get('feedback_sentiment'),
-                                phone=doctor.get('phone'),
-                                hospital_longitude = hospital.get('gps_coordinates', {}).get('longitude'),
-                                hospital_latitude = hospital.get('gps_coordinates', {}).get('latitude'),
-                                hospital_name = hospital.get('title'),
-                                hospital_website = website,
-                            )
-
-                return JsonResponse({'status': 'success', 'message': 'Hospitals data stored successfully.'})
-            else:
-                return JsonResponse({'status': 'error', 'message': 'No hospital data found.'}, status=404)
-
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)

@@ -112,11 +112,16 @@ export default function HealthcareAIChatbot() {
 
   // Fetch hospitals with pagination
   const fetchHospitals = useCallback((page: number) => {
+    if (userLocation.latitude && userLocation.longitude) {
+
     setIsLoadingHospitals(true);
-    axios.post(`http://localhost:8000/api/hospitals/?page=${page}`, {
+    axios.post('http://localhost:8000/api/hospitals/', {
       query: 'Some query for hospitals',
-      reference_content: hospitalReference
-    })
+      reference_content: 'Some reference content',
+      latitude: userLocation.latitude,
+      longitude: userLocation.longitude,
+      page: page // Include the current page in the request
+  })
       .then(response => {
         setHospitals(prev => [...prev, ...response.data.hospitals]);
         setTotalHospitalPages(response.data.total_pages);
@@ -126,6 +131,7 @@ export default function HealthcareAIChatbot() {
         console.error('Error fetching hospitals:', error);
         setIsLoadingHospitals(false);
       });
+    }
   }, [hospitalReference]);
 
 
@@ -135,20 +141,20 @@ export default function HealthcareAIChatbot() {
   }, [fetchHospitals, hospitalPage]);
 
   useEffect(() => {
-    console.log("hospitals: ", hospitals);
-    if (hospitals.length > 0) {
-      console.log("hospital.longitude: ", hospitals[0].longitude, "hospital.latitude: ", hospitals[0].latitude);
-      console.log("loc: ", hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude })));
-    }
-
     const fetchDoctors = (page: number) => {
       axios.post(`http://localhost:8000/api/doctors/?page=${page}`, {
         reference_content: doctorReference,
-        hospital_names: hospitals.map(hospital => hospital.name), // Extract hospital names
-        hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude })) // Extract hospital locations
+        hospital_names: hospitals.map(hospital => hospital.name),
+        hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
       })
         .then(response => {
-          setDoctors(prev => [...prev, ...response.data.doctors]);
+          const newDoctors = response.data.doctors;
+          setDoctors(prev => {
+            // Filter out duplicates based on doctor.id
+            const existingIds = new Set(prev.map(doctor => doctor.id));
+            const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
+            return [...prev, ...uniqueNewDoctors];
+          });
           setTotalDoctorPages(response.data.total_pages);
           setIsLoadingDoctors(false);
         })
@@ -157,7 +163,7 @@ export default function HealthcareAIChatbot() {
           setIsLoadingDoctors(false);
         });
     };
-
+  
     if (doctorPage <= totalDoctorPages) {
       setIsLoadingDoctors(true);
       fetchDoctors(doctorPage);
@@ -345,10 +351,15 @@ export default function HealthcareAIChatbot() {
 
           // Now get hospitals and doctors
           if (tabContent === 'chat') {
+            if (userLocation.latitude && userLocation.longitude) {
+
             axios.post('http://localhost:8000/api/hospitals/', {
               query: 'Some query for hospitals',
-              reference_content: hospitalReference
-            })
+              reference_content: 'Some reference content',
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
+              page: hospitalPage // Include the current page in the request
+          })
               .then(response => {
                 setHospitals(response.data);
                 setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
@@ -358,6 +369,7 @@ export default function HealthcareAIChatbot() {
                 console.error('Error fetching hospitals:', error);
                 setIsLoadingHospitals(false);
               });
+            }
           }
         })
         .catch(error => {
@@ -479,9 +491,17 @@ export default function HealthcareAIChatbot() {
 
 
   const loadMoreHospitals = useCallback(() => {
+    if (userLocation.latitude && userLocation.longitude) {
+
     if (hospitalPage <= totalHospitalPages) {
       setIsLoadingHospitals(true);
-      axios.get(`http://localhost:8000/api/hospitals/?page=${hospitalPage}`)
+      axios.post('http://localhost:8000/api/hospitals/', {
+        query: 'Some query for hospitals',
+        reference_content: 'Some reference content',
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        page: hospitalPage // Include the current page in the request
+    })
         .then(response => {
           setHospitals(prev => [...prev, ...response.data.hospitals]);
           setTotalHospitalPages(response.data.total_pages);
@@ -493,29 +513,35 @@ export default function HealthcareAIChatbot() {
           setIsLoadingHospitals(false);
         });
     }
+  }
   }, [hospitalPage, totalHospitalPages]);
 
-  // Update the loadMoreDoctors function to handle pagination
-  const loadMoreDoctors = useCallback(() => {
-    if (doctorPage <= totalDoctorPages) {
-      setIsLoadingDoctors(true);
-      axios.post(`http://localhost:8000/api/doctors/?page=${doctorPage}`, {
-        hospital_names: hospitals.map(hospital => hospital.name),
-        hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
-      })
-        .then(response => {
-          setDoctors(prev => [...prev, ...response.data.doctors]);
-          setTotalDoctorPages(response.data.total_pages);
-          setDoctorPage(prev => prev + 1);
-          setIsLoadingDoctors(false);
-        })
-        .catch(error => {
-          console.error('Error fetching doctors:', error);
-          setIsLoadingDoctors(false);
+// Update the loadMoreDoctors function to handle pagination
+const loadMoreDoctors = useCallback(() => {
+  if (doctorPage <= totalDoctorPages) {
+    setIsLoadingDoctors(true);
+    axios.post(`http://localhost:8000/api/doctors/?page=${doctorPage}`, {
+      hospital_names: hospitals.map(hospital => hospital.name),
+      hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
+    })
+      .then(response => {
+        const newDoctors = response.data.doctors;
+        setDoctors(prev => {
+          // Filter out duplicates based on doctor.id
+          const existingIds = new Set(prev.map(doctor => doctor.id));
+          const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
+          return [...prev, ...uniqueNewDoctors];
         });
-    }
-  }, [doctorPage, totalDoctorPages, hospitals]);
-
+        setTotalDoctorPages(response.data.total_pages);
+        setDoctorPage(prev => prev + 1);
+        setIsLoadingDoctors(false);
+      })
+      .catch(error => {
+        console.error('Error fetching doctors:', error);
+        setIsLoadingDoctors(false);
+      });
+  }
+}, [doctorPage, totalDoctorPages, hospitals]);
 
   useEffect(() => {
     loadMoreHospitals();
@@ -534,6 +560,61 @@ export default function HealthcareAIChatbot() {
       setHospitalPage(prev => prev + 1);
     }
   };
+
+
+  const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      setIsLoadingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setIsLoadingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setIsLoadingLocation(false);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  };
+
+  useEffect(() => {
+    if (currentTab === 'hospitals' && !userLocation.latitude && !userLocation.longitude) {
+      getUserLocation();
+    }
+  }, [currentTab]);
+
+  useEffect(() => {
+    if (userLocation.latitude && userLocation.longitude) {
+        console.log("userLocation: ", userLocation);
+
+        // Fetch hospitals using the user's location and current page
+        axios.post('http://localhost:8000/api/hospitals/', {
+            query: 'Some query for hospitals',
+            reference_content: 'Some reference content',
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+            page: hospitalPage // Include the current page in the request
+        })
+        .then(response => {
+            setHospitals(prevHospitals => [...prevHospitals, ...response.data.hospitals]); // Append new hospitals
+            setTotalHospitalPages(response.data.total_pages);
+            setIsLoadingHospitals(false);
+        })
+        .catch(error => {
+            console.error('Error fetching hospitals:', error);
+            setIsLoadingHospitals(false);
+        });
+    }
+}, [userLocation, hospitalPage]); // Add hospitalPage as a dependency
 
 
   return (
@@ -680,99 +761,106 @@ export default function HealthcareAIChatbot() {
               )}
             </TabsContent>
             <TabsContent value="hospitals">
-              <div className="h-[700px] w-full rounded-md border p-4 overflow-y-auto" onScroll={handleHospitalScroll}>
-                {isLoadingHospitals && hospitalPage === 1 ? (
-                  <div className="flex justify-center items-center h-full p-14">
-                    <CircularProgress />
-                  </div>
-                ) : (
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Nearby Hospitals</CardTitle>
-                    <div className="flex items-center">
-                      <Select value={hospitalSort} onValueChange={setHospitalSort}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="distance">Distance</SelectItem>
-                          <SelectItem value="rating">Rating</SelectItem>
-                          <SelectItem value="comfort">Comfort</SelectItem>
-                          <SelectItem value="staff_behavior">Staff Behavior</SelectItem>
-                          <SelectItem value="treatment_score">Treatment Score</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {/* <Button onClick={toggleSortOrder} size="icon" variant="ghost" className="ml-2">
-                        {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                      </Button> */}
+              {isLoadingLocation ? (
+                <div className="flex justify-center items-center h-full p-14">
+                  <CircularProgress />
+                  <p>Loading your location...</p>
+                </div>
+              ) : (
+                <div className="h-[700px] w-full rounded-md border p-4 overflow-y-auto" onScroll={handleHospitalScroll}>
+                  {isLoadingHospitals && hospitalPage === 1 ? (
+                    <div className="flex justify-center items-center h-full p-14">
+                      <CircularProgress />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                  <ul className="space-y-4">
-                    {hospitals.map(hospital => (
-                      <li key={hospital.id} className="flex items-start space-x-4 p-4 rounded-lg hover:bg-gray-100">
-                        <div className={`w-3 h-3 rounded-full mt-1 ${hospital.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <img src={hospital.thumbnail} alt={hospital.name} className="w-24 h-16 object-cover rounded" />
-                        <div className="flex-grow">
-                          <h3 className="font-semibold">{hospital.name}</h3>
-                          <p className="text-sm text-muted-foreground">{hospital.address}</p>
-                          <p className="text-sm">Distance: {hospital.distance} km</p>
-                          <div className="flex items-center mt-1 space-x-4">
-                            <Badge variant="secondary" className={hospitalSort === 'rating' ? 'bg-primary text-primary-foreground' : ''}>
-                              <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                              <span>{hospital.rating.toFixed(1)}</span>
-                            </Badge>
-                            <Badge variant="secondary" className={hospitalSort === 'comfort' ? 'bg-primary text-primary-foreground' : ''}>
-                              Comfort: {hospital.comfort.toFixed(1)}
-                            </Badge>
-                            <Badge variant="secondary" className={hospitalSort === 'staff_behavior' ? 'bg-primary text-primary-foreground' : ''}>
-                              Staff: {hospital.staff_behavior.toFixed(1)}
-                            </Badge>
-                            <Badge variant="secondary" className={hospitalSort === 'treatment_score' ? 'bg-primary text-primary-foreground' : ''}>
-                              Treatment: {hospital.treatment_score.toFixed(1)}
-                            </Badge>
+                  ) : (
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Nearby Hospitals</CardTitle>
+                        <div className="flex items-center">
+                          <Select value={hospitalSort} onValueChange={setHospitalSort}>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="distance">Distance</SelectItem>
+                              <SelectItem value="rating">Rating</SelectItem>
+                              <SelectItem value="comfort">Comfort</SelectItem>
+                              <SelectItem value="staff_behavior">Staff Behavior</SelectItem>
+                              <SelectItem value="treatment_score">Treatment Score</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {/* <Button onClick={toggleSortOrder} size="icon" variant="ghost" className="ml-2">
+                                      {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                                    </Button> */}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-4">
+                          {hospitals.map(hospital => (
+                            <li key={hospital.id} className="flex items-start space-x-4 p-4 rounded-lg hover:bg-gray-100">
+                              <div className={`w-3 h-3 rounded-full mt-1 ${hospital.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
+                              <img src={hospital.thumbnail} alt={hospital.name} className="w-24 h-16 object-cover rounded" />
+                              <div className="flex-grow">
+                                <h3 className="font-semibold">{hospital.name}</h3>
+                                <p className="text-sm text-muted-foreground">{hospital.address}</p>
+                                <p className="text-sm">Distance: {hospital.distance} km</p>
+                                <div className="flex items-center mt-1 space-x-4">
+                                  <Badge variant="secondary" className={hospitalSort === 'rating' ? 'bg-primary text-primary-foreground' : ''}>
+                                    <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                                    <span>{hospital.rating.toFixed(1)}</span>
+                                  </Badge>
+                                  <Badge variant="secondary" className={hospitalSort === 'comfort' ? 'bg-primary text-primary-foreground' : ''}>
+                                    Comfort: {hospital.comfort.toFixed(1)}
+                                  </Badge>
+                                  <Badge variant="secondary" className={hospitalSort === 'staff_behavior' ? 'bg-primary text-primary-foreground' : ''}>
+                                    Staff: {hospital.staff_behavior.toFixed(1)}
+                                  </Badge>
+                                  <Badge variant="secondary" className={hospitalSort === 'treatment_score' ? 'bg-primary text-primary-foreground' : ''}>
+                                    Treatment: {hospital.treatment_score.toFixed(1)}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                      <CardFooter>
+                        <form onSubmit={(e) => handleSendMessage(e, 'hospitals')} className="flex items-center w-full mt-4">
+                          {isLoadingChatHospitals && hospitalPage > 1 ? (
+                            <div className="flex-grow flex justify-center items-center">
+                              <CircularProgress size={24} /> {/* Use a loading spinner */}
+                            </div>
+                          ) : (<Input
+                            type="text"
+                            placeholder="Ask about hospitals..."
+                            value={hospitalInput}
+                            onChange={(e) => setHospitalInput(e.target.value)}
+                            className="flex-grow mr-2"
+                          />)}
+
+                          <Button type="button" onClick={() => handleAudioInputForTab('hospitals')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
+                            <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                            <span className="sr-only">Record audio</span>
+                          </Button>
+                          <Button type="submit">Ask</Button>
+                        </form>
+
+                      </CardFooter>
+                    </Card>
+                  )}
+                  {hospitalMessages.length > 0 && (
+                    <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={hospitalScrollRef}>
+                      {hospitalMessages.map((msg, index) => (
+                        <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
+                          <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                            {msg.content}
                           </div>
                         </div>
-                      </li>
-                    ))}
-                  </ul>
-                  </CardContent>
-              <CardFooter>
-                <form onSubmit={(e) => handleSendMessage(e, 'hospitals')} className="flex items-center w-full mt-4">
-                  {isLoadingChatHospitals && hospitalPage > 1 ? (
-                    <div className="flex-grow flex justify-center items-center">
-                      <CircularProgress size={24} /> {/* Use a loading spinner */}
+                      ))}
                     </div>
-                  ) : (<Input
-                    type="text"
-                    placeholder="Ask about hospitals..."
-                    value={hospitalInput}
-                    onChange={(e) => setHospitalInput(e.target.value)}
-                    className="flex-grow mr-2"
-                  />)}
-
-                  <Button type="button" onClick={() => handleAudioInputForTab('hospitals')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
-                    <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
-                    <span className="sr-only">Record audio</span>
-                  </Button>
-                  <Button type="submit">Ask</Button>
-                </form>
-
-              </CardFooter>
-            </Card>
-              )}
-              {hospitalMessages.length > 0 && (
-                <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={hospitalScrollRef}>
-                  {hospitalMessages.map((msg, index) => (
-                    <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
-                      <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))}
+                  )}
                 </div>
               )}
-              </div>
             </TabsContent>
             <TabsContent value="doctors">
               {isLoadingDoctors ? (
