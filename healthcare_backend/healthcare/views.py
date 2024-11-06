@@ -390,19 +390,23 @@ def doctors_suggestions_openai(request):
 def hospital_list(request):
     hospitals = list(Hospital.objects.values())
     return JsonResponse(hospitals, safe=False)
-
+from django.db.models import Q
 @csrf_exempt
 def doctor_list(request):
     # Parse JSON body data
     try:
         data = json.loads(request.body)
         hospital_names = data.get('hospital_names', [])
+        hospital_locations = data.get('hospital_locations', [])
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    # Filter doctors based on hospital names
-    doctors = list(Doctor.objects.filter(hospital_name__in=hospital_names).values())
-    # breakpoint()
+    # Filter doctors based on hospital names and locations
+    query = Q()
+    for name, location in zip(hospital_names, hospital_locations):
+        query |= Q(hospital_name=name, hospital_longitude=location['longitude'], hospital_latitude=location['latitude'])
+    breakpoint()
+    doctors = list(Doctor.objects.filter(query).values())
     return JsonResponse(doctors, safe=False)
 
 def convert_to_wav(input_audio_file):

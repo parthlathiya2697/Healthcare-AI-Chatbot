@@ -123,13 +123,18 @@ export default function HealthcareAIChatbot() {
 
   useEffect(()=> {
     console.log("hospitals: ", hospitals)
+    if (hospitals.length > 0){
 
-    // fetch doctors for each hospital  by passing all hospital names
-    axios.post('http://localhost:8000/api/doctors/', {
-      query: 'Some query for doctors',
-      reference_content: doctorReference,
-      hospital_names: hospitals.map(hospital => hospital.name) // Extract hospital names
-    })
+      console.log("hospital.longitude: ", hospitals[0].longitude, "hospital.latitude: ", hospitals[0].latitude)
+      console.log("loc: ", hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude })))
+    }
+
+        // fetch doctors for each hospital by passing all hospital names and locations
+        axios.post('http://localhost:8000/api/doctors/', {
+          reference_content: doctorReference,
+          hospital_names: hospitals.map(hospital => hospital.name), // Extract hospital names
+          hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude })) // Extract hospital locations
+        })
       .then(response => {
         setDoctors(response.data);
         setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
