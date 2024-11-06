@@ -19,6 +19,7 @@ import VideoDialog from './VideoDialog';
 import ImageModal from './ImageModal';
 import AudioDialog from './AudioDialog';
 import ReactMarkdown from 'react-markdown';
+import RequestCountDisplay from './RequestCountDisplay';
 
 export default function HealthcareAIChatbot() {
 
@@ -79,9 +80,26 @@ export default function HealthcareAIChatbot() {
   const [totalHospitalPages, setTotalHospitalPages] = useState(1);
   const [totalDoctorPages, setTotalDoctorPages] = useState(1);
 
+  const [requestCount, setRequestCount] = useState<number | null>(null);
+  const [maxRequestCount, setMaxRequestCount] = useState<number | null>(null);
+  const [showPopup, setShowPopup] = useState(false)
+
 
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance based on your current chat in the main chat section. Whether you're dealing with minor injuries, medical emergencies, or general health concerns. I can also help you what medicines is prescribed to you and why. I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
+
+      const fetchRequestData = async () => {
+        try {
+          const response = await fetch(`http://localhost:8000/api/requestCount/`);
+          const data = await response.json();
+          setRequestCount(data.request_count);
+          setMaxRequestCount(data.max_request_count);
+        } catch (error) {
+          console.error('Error fetching request data:', error);
+        }
+      };
+  
+      fetchRequestData();
   }, [])
 
   // useEffect(() => {
@@ -267,6 +285,18 @@ export default function HealthcareAIChatbot() {
   }
 
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
+    
+    e.preventDefault(); // Prevent default form submission behavior
+    // return if request count exceeds the limit
+    console.log("Request count: ", requestCount)
+    console.log("Max request count: ", maxRequestCount)
+    console.log("requestCount >= maxRequestCount ", requestCount >= maxRequestCount)
+    if (requestCount !== null && maxRequestCount !== null && requestCount >= maxRequestCount) {
+      setShowPopup(true)
+      console.log("Request count exceeded the limit")
+      return
+    }
+
     e.preventDefault();
     let input = '';
     let setInput = () => { };
@@ -337,6 +367,7 @@ export default function HealthcareAIChatbot() {
           setInput('');
           setBase64Image(null);
           setIsLoading(false);
+          setRequestCount((requestCount ?? 0) + 1);
 
           // Scroll to the bottom of the chat area
           if (chatScrollRef.current) {
@@ -614,6 +645,8 @@ const loadMoreDoctors = useCallback(() => {
 
 
       <Card className="w-full mainC">
+      <RequestCountDisplay requestCount={requestCount} setRequestCount={setRequestCount} />
+
         <CardHeader>
           <CardTitle>AI Health Assistant</CardTitle>
           <CardDescription>Get first aid advice, find nearby hospitals, and connect with doctors</CardDescription>
@@ -1003,8 +1036,16 @@ const loadMoreDoctors = useCallback(() => {
         onAudioRecorded={handleAudioRecorded}
         onTextRecognized={handleTextRecognized} // Pass the handler for recognized text
       />
-
-
+      {console.log("showPopup: ", showPopup)}
+      {showPopup && (
+        <div className="fixed bottom-0 left-0 right-0 bg-red-500 text-white p-4 z-50 flex flex-col items-center justify-center vignette-effect">
+          <span>Number of Demo Trials Expired</span> [{requestCount}/{maxRequestCount}]
+          <p>Please try again tomorrow or request the Admin at plathiya2611@gmail.com</p>
+          <button onClick={() => setShowPopup(false)} className="mt-2 underline">
+            Dismiss
+          </button>
+        </div>
+      )}
 
     </>
   );

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 
     'healthcare',
     'corsheaders',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -144,3 +145,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 APPEND_SLASH = False
+
+import os
+request_count = int(os.environ['DEMO_REQUEST_COUNT'])
+request_count_max = int(os.environ['DEMO_MAX_REQUEST_COUNT'])

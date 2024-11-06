@@ -23,6 +23,7 @@ import io
 from django.http import JsonResponse
 from .models import Hospital, Doctor
 import google.generativeai as genai
+from healthcare_backend import settings
 
 
 import random
@@ -150,9 +151,14 @@ create_vector_store()
 
     
 
+from rest_framework.response import Response
 
 @csrf_exempt
 def chat_openai(request):
+
+    if settings.request_count >= settings.request_count_max:
+        return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -234,6 +240,10 @@ def chat_openai(request):
 
     # Return the response as JSON
     # return JsonResponse({'response': response_message})
+
+    # increease the request count
+    settings.request_count += 1
+    
     return JsonResponse({'response': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
@@ -243,6 +253,11 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 @csrf_exempt
 def chat_gemini(request):
+
+    if settings.request_count >= settings.request_count_max:
+        return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    
+
     try:
         data = json.loads(request.body)
         user_input = data.get('query', '')
@@ -288,12 +303,21 @@ def chat_gemini(request):
     response = response.text.replace("```json","").replace("```","").strip()
     print(f'response: {response}')
     response = json.loads(response)
+
+    # increease the request count
+    settings.request_count += 1
+
     return JsonResponse({'response': response})
 
 
 
 @csrf_exempt
 def first_aid_suggestions_openai(request):
+
+    if settings.request_count >= settings.request_count_max:
+        return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    
+
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -320,11 +344,20 @@ def first_aid_suggestions_openai(request):
 
     # Return the response as JSON
     # return JsonResponse({'suggestion': response_message})
+
+    # increease the request count
+    settings.request_count += 1
+
     return JsonResponse({'suggestion': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
 @csrf_exempt
 def hospitals_suggestions_openai(request):
+
+    if settings.request_count >= settings.request_count_max:
+            return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    
+
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -351,11 +384,20 @@ def hospitals_suggestions_openai(request):
 
     # Return the response as JSON
     # return JsonResponse({'suggestion': response_message})
+    
+    # increease the request count
+    settings.request_count += 1
+
     return JsonResponse({'suggestion': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
 @csrf_exempt
 def doctors_suggestions_openai(request):
+
+    if settings.request_count >= settings.request_count_max:
+            return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    
+
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -382,6 +424,10 @@ def doctors_suggestions_openai(request):
 
     # Return the response as JSON
     # return JsonResponse({'suggestion': response_message})
+
+    # increease the request count
+    settings.request_count += 1
+
     return JsonResponse({'suggestion': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
@@ -673,3 +719,18 @@ def fetch_doctors(hospital_name, location):
             doctors.append(doctor)
 
     return doctors
+
+
+from rest_framework import status
+
+@csrf_exempt
+def request_count_view(request):
+    if request.method == 'GET':
+        try:
+            return JsonResponse({
+                'request_count': settings.request_count,
+                'max_request_count': settings.request_count_max
+            }, status=200)
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': str(e)}, status=500)
