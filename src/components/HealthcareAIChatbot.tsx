@@ -1,126 +1,79 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "../components/ui/input"
-import { ScrollArea } from "../components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star, Image as ImageIcon, Video as VideoIcon, ArrowUp, ArrowDown, Phone, CircleX } from 'lucide-react'
-import { Badge } from "../components/ui/badge"
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
-import VideoModal from './VideoModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faVideo, faCamera } from '@fortawesome/free-solid-svg-icons';
-import CameraPanel from './CameraPanel'
-import VideoDialog from './VideoDialog';
-import ImageModal from './ImageModal';
-import AudioDialog from './AudioDialog';
 import ReactMarkdown from 'react-markdown';
+import {
+  MessageCircle, AlertTriangle, Hospital, User, Mic, Volume2, Star,
+  Image as ImageIcon, Video as VideoIcon, ArrowUp, ArrowDown, Phone, CircleX
+} from 'lucide-react';
+
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import AudioDialog from './AudioDialog';
+import CameraPanel from './CameraPanel';
+import ImageModal from './ImageModal';
 import RequestCountDisplay from './RequestCountDisplay';
+import VideoDialog from './VideoDialog';
+import VideoModal from './VideoModal';
+
 
 export default function HealthcareAIChatbot() {
 
+  const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState('');
+  const chatInputRef = useRef<HTMLInputElement | null>(null);
   const [chatMessages, setChatMessages] = useState([
     { role: 'assistant', content: "Welcome to your AI Health Assistant! You've come to the right place. I've analyzed thousands of cases worldwide and I'm here to help. How can I assist you today?" }
-  ])
-  const [firstAidMessages, setFirstAidMessages] = useState([])
-  const [hospitalMessages, setHospitalMessages] = useState([])
-  const [doctorMessages, setDoctorMessages] = useState([])
-  const [chatInput, setChatInput] = useState('');
-  const [firstAidInput, setFirstAidInput] = useState('');
-  const [hospitalInput, setHospitalInput] = useState('');
-  const [doctorInput, setDoctorInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false)
-  const [hospitalSort, setHospitalSort] = useState('distance')
-  const [sortOrder, setSortOrder] = useState('asc')
-  const [selectedDoctor, setSelectedDoctor] = useState(null)
-
-  const [hospitals, setHospitals] = useState([]);
-  const [isLoadingHospitals, setIsLoadingHospitals] = useState(true);
-  const [doctors, setDoctors] = useState([]);
-  const [isLoadingDoctors, setIsLoadingDoctors] = useState(true);
-
-
-  const [firstAidReference, setFirstAidReference] = useState('');
-  const [hospitalReference, setHospitalReference] = useState('');
-  const [doctorReference, setDoctorReference] = useState('');
-
-  const [base64Image, setBase64Image] = useState<string | null>(null);
-
-  const [isLoadingChat, setIsLoadingChat] = useState(false)
-  const [isLoadingChatFirstAid, setIsLoadingChatFirstAid] = useState(false)
-  const [isLoadingChatHospitals, setIsLoadingChatHospitals] = useState(false)
-  const [isLoadingChatDoctors, setIsLoadingChatDoctors] = useState(false)
-
-
-  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false); // Add state for VideoDialog
-
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [videoModalSrc, setVideoModalSrc] = useState(''); // Add state for video modal source
-  const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false); // State for controlling the image modal
-  const [isAudioDialogOpen, setIsAudioDialogOpen] = useState(false); // State for AudioDialog
-  const [currentTab, setCurrentTab] = useState('chat');
-
-  const chatInputRef = useRef<HTMLInputElement | null>(null); // Add ref for chat input
+  ]);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
-  const firstAidScrollRef = useRef<HTMLDivElement | null>(null);
-  const hospitalScrollRef = useRef<HTMLDivElement | null>(null);
-  const doctorScrollRef = useRef<HTMLDivElement | null>(null);
-
-  const [hospitalPage, setHospitalPage] = useState(1);
+  const [currentTab, setCurrentTab] = useState('chat');
+  const [doctorInput, setDoctorInput] = useState('');
+  const [doctorMessages, setDoctorMessages] = useState([]);
   const [doctorPage, setDoctorPage] = useState(1);
-  const [totalHospitalPages, setTotalHospitalPages] = useState(1);
-  const [totalDoctorPages, setTotalDoctorPages] = useState(1);
-
-  const [requestCount, setRequestCount] = useState<number | null>(null);
-  const [maxRequestCount, setMaxRequestCount] = useState<number | null>(null);
-  const [showPopup, setShowPopup] = useState(false)
-
-
-  const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
+  const doctorScrollRef = useRef<HTMLDivElement | null>(null);
+  const [doctors, setDoctors] = useState([]);
+  const [doctorReference, setDoctorReference] = useState('');
+  const [firstAidInput, setFirstAidInput] = useState('');
+  const [firstAidMessages, setFirstAidMessages] = useState([]);
+  const firstAidScrollRef = useRef<HTMLDivElement | null>(null);
+  const [firstAidReference, setFirstAidReference] = useState('');
+  const [hospitalInput, setHospitalInput] = useState('');
+  const [hospitalMessages, setHospitalMessages] = useState([]);
+  const [hospitalPage, setHospitalPage] = useState(1);
+  const hospitalScrollRef = useRef<HTMLDivElement | null>(null);
+  const [hospitalReference, setHospitalReference] = useState('');
+  const [hospitalSort, setHospitalSort] = useState('distance');
+  const [hospitals, setHospitals] = useState([]);
+  const [isAudioDialogOpen, setIsAudioDialogOpen] = useState(false);
+  const [isCameraPanelOpen, setIsCameraPanelOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [isLoadingChatDoctors, setIsLoadingChatDoctors] = useState(false);
+  const [isLoadingChatFirstAid, setIsLoadingChatFirstAid] = useState(false);
+  const [isLoadingChatHospitals, setIsLoadingChatHospitals] = useState(false);
+  const [isLoadingDoctors, setIsLoadingDoctors] = useState(true);
+  const [isLoadingHospitals, setIsLoadingHospitals] = useState(true);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-
-
-  useEffect(() => {
-    setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance based on your current chat in the main chat section. Whether you're dealing with minor injuries, medical emergencies, or general health concerns. I can also help you what medicines is prescribed to you and why. I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
-
-    const fetchRequestData = async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/api/requestCount/`);
-        const data = await response.json();
-        setRequestCount(data.request_count);
-        setMaxRequestCount(data.max_request_count);
-      } catch (error) {
-        console.error('Error fetching request data:', error);
-      }
-    };
-
-    fetchRequestData();
-  }, [])
-
-  useEffect(() => {
-    console.log("Hospital Reference: ", hospitalReference)
-  }, [hospitalReference]);
-
-  useEffect(() => {
-    console.log("Doctor Reference: ", doctorReference)
-  }, [doctorReference]);
-
-
-
-  useEffect(() => {
-    if (chatInputRef.current) {
-      chatInputRef.current.focus();
-    }
-  }, [chatInputRef.current]); // Add dependency on chatInputRef.current
+  const [isRecording, setIsRecording] = useState(false);
+  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [maxRequestCount, setMaxRequestCount] = useState<number | null>(null);
+  const [requestCount, setRequestCount] = useState<number | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [totalDoctorPages, setTotalDoctorPages] = useState(1);
+  const [totalHospitalPages, setTotalHospitalPages] = useState(1);
+  const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
 
 
   const fetchHospitals = useCallback((page: number) => {
@@ -155,46 +108,34 @@ export default function HealthcareAIChatbot() {
   }, [userLocation]);
 
 
-  useEffect(() => {
-    const fetchDoctors = (page: number) => {
-      axios.post(`http://localhost:8000/api/doctors/?page=${page}`, {
-        reference_content: doctorReference,
-        hospital_names: hospitals.map(hospital => hospital.name),
-        hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
-      })
-        .then(response => {
-          const newDoctors = response.data.doctors;
-          setDoctors(prev => {
-            const existingIds = new Set(prev.map(doctor => doctor.id));
-            const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
-            return [...prev, ...uniqueNewDoctors];
-          });
-          setTotalDoctorPages(response.data.total_pages);
-          setDoctorPage(prev => prev + 1);
-          setIsLoadingDoctors(false);
-
-          // Append new data to doctorReference
-          setDoctorReference(prev => {
-            const newReference = JSON.stringify(response.data);
-            return prev.includes(newReference) ? prev : prev + ' ' + newReference;
-          });
-        })
-        .catch(error => {
-          console.error('Error fetching doctors:', error);
-          setIsLoadingDoctors(false);
+  const fetchDoctors = (page: number) => {
+    axios.post(`http://localhost:8000/api/doctors/?page=${page}`, {
+      reference_content: doctorReference,
+      hospital_names: hospitals.map(hospital => hospital.name),
+      hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
+    })
+      .then(response => {
+        const newDoctors = response.data.doctors;
+        setDoctors(prev => {
+          const existingIds = new Set(prev.map(doctor => doctor.id));
+          const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
+          return [...prev, ...uniqueNewDoctors];
         });
-    };
+        setTotalDoctorPages(response.data.total_pages);
+        setDoctorPage(prev => prev + 1);
+        setIsLoadingDoctors(false);
 
-    if (doctorPage <= totalDoctorPages) {
-      setIsLoadingDoctors(true);
-      fetchDoctors(doctorPage);
-    }
-  }, [hospitals, doctorPage, doctorReference]);
-
-
-  useEffect(() => {
-    console.log("doctors: ", doctors)
-  }, [doctors])
+        // Append new data to doctorReference
+        setDoctorReference(prev => {
+          const newReference = JSON.stringify(response.data);
+          return prev.includes(newReference) ? prev : prev + ' ' + newReference;
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching doctors:', error);
+        setIsLoadingDoctors(false);
+      });
+  };
 
 
   async function toBase64(blob: Blob): Promise<string> {
@@ -246,7 +187,6 @@ export default function HealthcareAIChatbot() {
       // Use window.URL.createObjectURL instead of URL.createObjectURL
       const videoUrl = window.URL.createObjectURL(videoBlob);
       setIsVideoModalOpen(true);
-      setVideoModalSrc(videoUrl);
     }
   };
 
@@ -279,9 +219,6 @@ export default function HealthcareAIChatbot() {
     e.preventDefault(); // Prevent default form submission behavior
     // return if request count exceeds the limit
     console.log("Handle send message from tab: ", tabContent)
-    console.log("Request count: ", requestCount)
-    console.log("Max request count: ", maxRequestCount)
-    console.log("requestCount >= maxRequestCount ", requestCount >= maxRequestCount)
     if (requestCount !== null && maxRequestCount !== null && requestCount >= maxRequestCount) {
       setShowPopup(true)
       console.log("Request count exceeded the limit")
@@ -334,8 +271,7 @@ export default function HealthcareAIChatbot() {
         return;
     }
 
-    console.log("Reference content: ", reference_content)
-    console.log("Hospital Reference content: ", hospitalReference)
+    console.log("Selected reference content: ", reference_content)
 
     if (input.trim() !== '' || base64Image || videoBlob) {
       setMessages([...messages, { role: 'user', content: input }]);
@@ -482,16 +418,6 @@ export default function HealthcareAIChatbot() {
     console.log("Playing audio guide for first aid")
   }
 
-  const sortedHospitals = [...hospitals].sort((a, b) => {
-    const order = sortOrder === 'asc' ? 1 : -1
-    if (hospitalSort === 'distance') return (a.distance - b.distance) * order
-    return (b[hospitalSort] - a[hospitalSort]) * order
-  })
-
-  const toggleSortOrder = () => {
-    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-  }
-
 
   // Automatically scrolls to the bottom of the chat
   const scrollToBottom = (scrollRef) => {
@@ -503,27 +429,124 @@ export default function HealthcareAIChatbot() {
     }
   };
 
-  // Chat tab auto-scrolling
+  // Handle scroll event to load more hospitals
+  const handleHospitalScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop === clientHeight && hospitalPage < totalHospitalPages) {
+      setHospitalPage(prev => prev + 1);
+    }
+  };
+
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      setIsLoadingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setIsLoadingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setIsLoadingLocation(false);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  };
+
+
+  // Initialization and data fetching
+  useEffect(() => {
+    loadMoreHospitals();
+  }, []);
+
+  useEffect(() => {
+    setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance based on your current chat in the main chat section. Whether you're dealing with minor injuries, medical emergencies, or general health concerns. I can also help you what medicines is prescribed to you and why. I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
+
+    const fetchRequestData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/requestCount/`);
+        const data = await response.json();
+        setRequestCount(data.request_count);
+        setMaxRequestCount(data.max_request_count);
+      } catch (error) {
+        console.error('Error fetching request data:', error);
+      }
+    };
+
+    fetchRequestData();
+  }, []);
+
+  // Auto-scrolling for different tabs
   useEffect(() => {
     scrollToBottom(chatScrollRef);
   }, [chatMessages]);
 
-  // First Aid tab auto-scrolling
   useEffect(() => {
     scrollToBottom(firstAidScrollRef);
   }, [firstAidMessages]);
 
-  // Hospitals tab auto-scrolling
   useEffect(() => {
     scrollToBottom(hospitalScrollRef);
   }, [hospitalMessages]);
 
-  // Doctors tab auto-scrolling
   useEffect(() => {
     scrollToBottom(doctorScrollRef);
   }, [doctorMessages]);
 
+  // Location and hospital fetching
+  useEffect(() => {
+    if (currentTab === 'hospitals' && !userLocation.latitude && !userLocation.longitude) {
+      getUserLocation();
+    }
+  }, [currentTab]);
 
+  useEffect(() => {
+    if (userLocation.latitude && userLocation.longitude && hospitalPage <= totalHospitalPages) {
+      fetchHospitals(hospitalPage);
+    }
+  }, [userLocation, hospitalPage]);
+
+  // Doctor fetching
+  useEffect(() => {
+    if (hospitals.length > 0 && !isLoadingHospitals && !isLoadingDoctors) {
+      loadMoreDoctors();
+    }
+  }, [hospitals, isLoadingHospitals, isLoadingDoctors]);
+
+  useEffect(() => {
+    if (doctorPage <= totalDoctorPages) {
+      setIsLoadingDoctors(true);
+      fetchDoctors(doctorPage);
+    }
+  }, [hospitals, doctorPage]);
+
+  // Logging and debugging
+  useEffect(() => {
+    console.log("Hospital Reference: ", hospitalReference);
+  }, [hospitalReference]);
+
+  useEffect(() => {
+    console.log("Doctor Reference: ", doctorReference);
+  }, [doctorReference]);
+
+  useEffect(() => {
+    console.log("doctors: ", doctors);
+  }, [doctors]);
+
+  useEffect(() => {
+    if (chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  }, [chatInputRef.current]); // Add dependency on chatInputRef.current
+
+
+  // Update the loadMoreHospitals function to handle pagination
   const loadMoreHospitals = useCallback(() => {
     if (userLocation.latitude && userLocation.longitude) {
 
@@ -582,62 +605,10 @@ export default function HealthcareAIChatbot() {
     }
   }, [doctorPage, totalDoctorPages, hospitals]);
 
-  useEffect(() => {
-    loadMoreHospitals();
-  }, []);
-
-  useEffect(() => {
-    if (hospitals.length > 0) {
-      loadMoreDoctors();
-    }
-  }, [hospitals]);
-
-  // Handle scroll event to load more hospitals
-  const handleHospitalScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop === clientHeight && hospitalPage < totalHospitalPages) {
-      setHospitalPage(prev => prev + 1);
-    }
-  };
 
 
-
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      setIsLoadingLocation(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setIsLoadingLocation(false);
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setIsLoadingLocation(false);
-        }
-      );
-    } else {
-      alert("Geolocation is not supported by this browser.");
-    }
-  };
-
-  useEffect(() => {
-    if (currentTab === 'hospitals' && !userLocation.latitude && !userLocation.longitude) {
-      getUserLocation();
-    }
-  }, [currentTab]);
-
-  useEffect(() => {
-    if (userLocation.latitude && userLocation.longitude && hospitalPage <= totalHospitalPages) {
-      fetchHospitals(hospitalPage);
-    }
-  }, [userLocation, hospitalPage]);
   return (
     <>
-
-
       <Card className="w-full mainC">
         <RequestCountDisplay requestCount={requestCount} setRequestCount={setRequestCount} />
 
@@ -808,9 +779,6 @@ export default function HealthcareAIChatbot() {
                               <SelectItem value="treatment_score">Treatment Score</SelectItem>
                             </SelectContent>
                           </Select>
-                          {/* <Button onClick={toggleSortOrder} size="icon" variant="ghost" className="ml-2">
-                                      {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                                    </Button> */}
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -872,7 +840,7 @@ export default function HealthcareAIChatbot() {
                       {hospitalMessages.map((msg, index) => (
                         <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                           <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                            {msg.content}
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
                           </div>
                         </div>
                       ))}
@@ -976,7 +944,7 @@ export default function HealthcareAIChatbot() {
                   {doctorMessages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                       <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                        {msg.content}
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                     </div>
                   ))}
