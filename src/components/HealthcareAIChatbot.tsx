@@ -106,24 +106,14 @@ export default function HealthcareAIChatbot() {
     fetchRequestData();
   }, [])
 
-  // useEffect(() => {
-  //   if (hospitalReference && Array.isArray(hospitalReference)) {
+  useEffect(() => {
+    console.log("Hospital Reference: ", hospitalReference)
+  }, [hospitalReference]);
 
-  //     // Call the doctors API with the hospital names
-  //     axios.post('http://localhost:8000/api/doctors/', {
-  //       hospital_names: hospitalReference.map(hospital => hospital.name) // Extract hospital names
-  //     })
-  //       .then(response => {
-  //         setDoctors(response.data);
-  //         setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
-  //         setIsLoadingDoctors(false);
-  //       })
-  //       .catch(error => {
-  //         console.error('Error fetching doctors:', error);
-  //         setIsLoadingDoctors(false);
-  //       });
-  //   }
-  // }, [hospitalReference]);
+  useEffect(() => {
+    console.log("Doctor Reference: ", doctorReference)
+  }, [doctorReference]);
+
 
 
   useEffect(() => {
@@ -141,16 +131,26 @@ export default function HealthcareAIChatbot() {
         longitude: userLocation.longitude,
         page: page
       })
-      .then(response => {
-        setHospitals(prev => [...prev, ...response.data.hospitals]);
-        setTotalHospitalPages(response.data.total_pages);
-        setIsLoadingHospitals(false);
-        setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
-      })
-      .catch(error => {
-        console.error('Error fetching hospitals:', error);
-        setIsLoadingHospitals(false);
-      });
+        .then(response => {
+          const newHospitals = response.data.hospitals;
+          setHospitals(prev => {
+            const existingIds = new Set(prev.map(hospital => hospital.id));
+            const uniqueNewHospitals = newHospitals.filter(hospital => !existingIds.has(hospital.id));
+            return [...prev, ...uniqueNewHospitals];
+          });
+          setTotalHospitalPages(response.data.total_pages);
+          setIsLoadingHospitals(false);
+
+          // Append new data to hospitalReference
+          setHospitalReference(prev => {
+            const newReference = JSON.stringify(response.data);
+            return prev.includes(newReference) ? prev : prev + ' ' + newReference;
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching hospitals:', error);
+          setIsLoadingHospitals(false);
+        });
     }
   }, [userLocation]);
 
@@ -165,13 +165,19 @@ export default function HealthcareAIChatbot() {
         .then(response => {
           const newDoctors = response.data.doctors;
           setDoctors(prev => {
-            // Filter out duplicates based on doctor.id
             const existingIds = new Set(prev.map(doctor => doctor.id));
             const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
             return [...prev, ...uniqueNewDoctors];
           });
           setTotalDoctorPages(response.data.total_pages);
+          setDoctorPage(prev => prev + 1);
           setIsLoadingDoctors(false);
+
+          // Append new data to doctorReference
+          setDoctorReference(prev => {
+            const newReference = JSON.stringify(response.data);
+            return prev.includes(newReference) ? prev : prev + ' ' + newReference;
+          });
         })
         .catch(error => {
           console.error('Error fetching doctors:', error);
@@ -185,26 +191,11 @@ export default function HealthcareAIChatbot() {
     }
   }, [hospitals, doctorPage, doctorReference]);
 
+
   useEffect(() => {
     console.log("doctors: ", doctors)
   }, [doctors])
 
-
-  // useEffect(() => {
-  //   axios.post('http://localhost:8000/api/doctors/', {
-  //     query: 'Some query for doctors',
-  //     reference_content: doctorReference
-  //   })
-  //     .then(response => {
-  //       setDoctors(response.data);
-  //       setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
-  //       setIsLoadingDoctors(false);
-  //     })
-  //     .catch(error => {
-  //       console.error('Error fetching doctors:', error);
-  //       setIsLoadingDoctors(false);
-  //     });
-  // }, []);
 
   async function toBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -397,11 +388,16 @@ export default function HealthcareAIChatbot() {
                 page: hospitalPage // Include the current page in the request
               })
                 .then(response => {
-                  setHospitals(prev => [...prev, ...response.data.hospitals]);
+                  const newHospitals = response.data.hospitals;
+                  setHospitals(prev => {
+                    const existingIds = new Set(prev.map(hospital => hospital.id));
+                    const uniqueNewHospitals = newHospitals.filter(hospital => !existingIds.has(hospital.id));
+                    return [...prev, ...uniqueNewHospitals];
+                  });
                   setTotalHospitalPages(response.data.total_pages);
                   setHospitalPage(prev => prev + 1);
                   setIsLoadingHospitals(false);
-                  setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
+                  setHospitalReference(JSON.stringify(response.data));
                 })
                 .catch(error => {
                   console.error('Error fetching hospitals:', error);
@@ -539,7 +535,12 @@ export default function HealthcareAIChatbot() {
           page: hospitalPage // Include the current page in the request
         })
           .then(response => {
-            setHospitals(prev => [...prev, ...response.data.hospitals]);
+            const newHospitals = response.data.hospitals;
+            setHospitals(prev => {
+              const existingIds = new Set(prev.map(hospital => hospital.id));
+              const uniqueNewHospitals = newHospitals.filter(hospital => !existingIds.has(hospital.id));
+              return [...prev, ...uniqueNewHospitals];
+            });
             setTotalHospitalPages(response.data.total_pages);
             setHospitalPage(prev => prev + 1);
             setIsLoadingHospitals(false);
@@ -572,6 +573,7 @@ export default function HealthcareAIChatbot() {
           setTotalDoctorPages(response.data.total_pages);
           setDoctorPage(prev => prev + 1);
           setIsLoadingDoctors(false);
+          setDoctorReference(prev => prev + ' ' + JSON.stringify(response.data));
         })
         .catch(error => {
           console.error('Error fetching doctors:', error);
@@ -627,11 +629,11 @@ export default function HealthcareAIChatbot() {
     }
   }, [currentTab]);
 
-useEffect(() => {
-  if (userLocation.latitude && userLocation.longitude && hospitalPage <= totalHospitalPages) {
-    fetchHospitals(hospitalPage);
-  }
-}, [userLocation, hospitalPage]);
+  useEffect(() => {
+    if (userLocation.latitude && userLocation.longitude && hospitalPage <= totalHospitalPages) {
+      fetchHospitals(hospitalPage);
+    }
+  }, [userLocation, hospitalPage]);
   return (
     <>
 
