@@ -9,6 +9,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 # from langchain.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 import requests
@@ -386,11 +387,24 @@ def doctors_suggestions_openai(request):
 
 
 
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+
 @csrf_exempt
 def hospital_list(request):
-    hospitals = list(Hospital.objects.values())
-    return JsonResponse(hospitals, safe=False)
-from django.db.models import Q
+    hospitals = Hospital.objects.all()
+    paginator = Paginator(hospitals, 10)  # Show 10 hospitals per page
+
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    hospitals_data = list(page_obj.object_list.values())
+    return JsonResponse({
+        'hospitals': hospitals_data,
+        'page': page_obj.number,
+        'total_pages': paginator.num_pages
+    }, safe=False)
+
 @csrf_exempt
 def doctor_list(request):
     # Parse JSON body data
@@ -405,9 +419,20 @@ def doctor_list(request):
     query = Q()
     for name, location in zip(hospital_names, hospital_locations):
         query |= Q(hospital_name=name, hospital_longitude=location['longitude'], hospital_latitude=location['latitude'])
-    breakpoint()
-    doctors = list(Doctor.objects.filter(query).values())
-    return JsonResponse(doctors, safe=False)
+
+    doctors = Doctor.objects.filter(query)
+    paginator = Paginator(doctors, 10)  # Show 10 doctors per page
+
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    doctors_data = list(page_obj.object_list.values())
+    return JsonResponse({
+        'doctors': doctors_data,
+        'page': page_obj.number,
+        'total_pages': paginator.num_pages
+    }, safe=False)
+
 
 def convert_to_wav(input_audio_file):
     # Read the audio file using audioread and soundfile
