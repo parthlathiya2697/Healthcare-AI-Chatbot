@@ -403,8 +403,6 @@ import json
 def hospital_list(request):
     try:
         data = json.loads(request.body)
-        query = data.get('query', '')
-        reference_content = data.get('reference_content', '')
         user_longitude = data.get('longitude', None)
         user_latitude = data.get('latitude', None)
 

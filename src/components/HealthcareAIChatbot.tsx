@@ -116,8 +116,6 @@ export default function HealthcareAIChatbot() {
 
     setIsLoadingHospitals(true);
     axios.post('http://localhost:8000/api/hospitals/', {
-      query: 'Some query for hospitals',
-      reference_content: 'Some reference content',
       latitude: userLocation.latitude,
       longitude: userLocation.longitude,
       page: page // Include the current page in the request
@@ -354,8 +352,6 @@ export default function HealthcareAIChatbot() {
             if (userLocation.latitude && userLocation.longitude) {
 
             axios.post('http://localhost:8000/api/hospitals/', {
-              query: 'Some query for hospitals',
-              reference_content: 'Some reference content',
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
               page: hospitalPage // Include the current page in the request
@@ -496,8 +492,6 @@ export default function HealthcareAIChatbot() {
     if (hospitalPage <= totalHospitalPages) {
       setIsLoadingHospitals(true);
       axios.post('http://localhost:8000/api/hospitals/', {
-        query: 'Some query for hospitals',
-        reference_content: 'Some reference content',
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
         page: hospitalPage // Include the current page in the request
@@ -598,8 +592,6 @@ const loadMoreDoctors = useCallback(() => {
 
         // Fetch hospitals using the user's location and current page
         axios.post('http://localhost:8000/api/hospitals/', {
-            query: 'Some query for hospitals',
-            reference_content: 'Some reference content',
             latitude: userLocation.latitude,
             longitude: userLocation.longitude,
             page: hospitalPage // Include the current page in the request
