@@ -264,6 +264,7 @@ def chat_gemini(request):
         chat_messages = data.get('chat_messages', [])
         image_data = data.get('image', None)
         video_data = data.get('video', None)
+        reference_content = data.get('reference_content', '')
 
         if video_data:
             video_bytes = base64.b64decode(video_data.split(',')[1])
@@ -278,8 +279,7 @@ def chat_gemini(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    system_message = f"You are a helpful assistant."
-
+    system_message = f"You are a helpful assistant. This is the refereence content: {reference_content}"
     genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
     model = genai.GenerativeModel("gemini-1.5-flash")
     content = system_message

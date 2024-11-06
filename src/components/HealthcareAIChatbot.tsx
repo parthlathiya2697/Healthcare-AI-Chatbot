@@ -85,21 +85,25 @@ export default function HealthcareAIChatbot() {
   const [showPopup, setShowPopup] = useState(false)
 
 
+  const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+
   useEffect(() => {
     setFirstAidReference("I'm here to assist you in providing quick and essential first aid guidance based on your current chat in the main chat section. Whether you're dealing with minor injuries, medical emergencies, or general health concerns. I can also help you what medicines is prescribed to you and why. I can guide you through step-by-step instructions.\n\nBefore we begin, please remember:\n\nThis chatbot is for informational purposes only.\n\nIn case of a serious or life-threatening emergency, always seek professional medical help immediately by calling your local emergency number.")
 
-      const fetchRequestData = async () => {
-        try {
-          const response = await fetch(`http://localhost:8000/api/requestCount/`);
-          const data = await response.json();
-          setRequestCount(data.request_count);
-          setMaxRequestCount(data.max_request_count);
-        } catch (error) {
-          console.error('Error fetching request data:', error);
-        }
-      };
-  
-      fetchRequestData();
+    const fetchRequestData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/requestCount/`);
+        const data = await response.json();
+        setRequestCount(data.request_count);
+        setMaxRequestCount(data.max_request_count);
+      } catch (error) {
+        console.error('Error fetching request data:', error);
+      }
+    };
+
+    fetchRequestData();
   }, [])
 
   // useEffect(() => {
@@ -121,6 +125,7 @@ export default function HealthcareAIChatbot() {
   //   }
   // }, [hospitalReference]);
 
+
   useEffect(() => {
     if (chatInputRef.current) {
       chatInputRef.current.focus();
@@ -128,33 +133,27 @@ export default function HealthcareAIChatbot() {
   }, [chatInputRef.current]); // Add dependency on chatInputRef.current
 
 
-  // Fetch hospitals with pagination
   const fetchHospitals = useCallback((page: number) => {
     if (userLocation.latitude && userLocation.longitude) {
-
-    setIsLoadingHospitals(true);
-    axios.post('http://localhost:8000/api/hospitals/', {
-      latitude: userLocation.latitude,
-      longitude: userLocation.longitude,
-      page: page // Include the current page in the request
-  })
+      setIsLoadingHospitals(true);
+      axios.post('http://localhost:8000/api/hospitals/', {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        page: page
+      })
       .then(response => {
         setHospitals(prev => [...prev, ...response.data.hospitals]);
         setTotalHospitalPages(response.data.total_pages);
         setIsLoadingHospitals(false);
+        setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
       })
       .catch(error => {
         console.error('Error fetching hospitals:', error);
         setIsLoadingHospitals(false);
       });
     }
-  }, [hospitalReference]);
+  }, [userLocation]);
 
-
-  // Load the first page of hospitals on component mount
-  useEffect(() => {
-    fetchHospitals(hospitalPage);
-  }, [fetchHospitals, hospitalPage]);
 
   useEffect(() => {
     const fetchDoctors = (page: number) => {
@@ -179,7 +178,7 @@ export default function HealthcareAIChatbot() {
           setIsLoadingDoctors(false);
         });
     };
-  
+
     if (doctorPage <= totalDoctorPages) {
       setIsLoadingDoctors(true);
       fetchDoctors(doctorPage);
@@ -285,9 +284,10 @@ export default function HealthcareAIChatbot() {
   }
 
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
-    
+
     e.preventDefault(); // Prevent default form submission behavior
     // return if request count exceeds the limit
+    console.log("Handle send message from tab: ", tabContent)
     console.log("Request count: ", requestCount)
     console.log("Max request count: ", maxRequestCount)
     console.log("requestCount >= maxRequestCount ", requestCount >= maxRequestCount)
@@ -302,6 +302,7 @@ export default function HealthcareAIChatbot() {
     let setInput = () => { };
     let setMessages = () => { };
     let setIsLoading = () => { };
+    let reference_content = () => { };
     let messages = [];
 
     // Determine which tab is active and set the corresponding state functions
@@ -311,6 +312,7 @@ export default function HealthcareAIChatbot() {
         setInput = setChatInput;
         setMessages = setChatMessages;
         setIsLoading = setIsLoadingChat;
+        reference_content = ''
         messages = chatMessages;
         break;
       case 'firstAid':
@@ -318,6 +320,7 @@ export default function HealthcareAIChatbot() {
         setInput = setFirstAidInput;
         setMessages = setFirstAidMessages;
         setIsLoading = setIsLoadingChatFirstAid;
+        reference_content = firstAidReference
         messages = firstAidMessages;
         break;
       case 'hospitals':
@@ -325,6 +328,7 @@ export default function HealthcareAIChatbot() {
         setInput = setHospitalInput;
         setMessages = setHospitalMessages;
         setIsLoading = setIsLoadingChatHospitals;
+        reference_content = hospitalReference
         messages = hospitalMessages;
         break;
       case 'doctors':
@@ -332,11 +336,15 @@ export default function HealthcareAIChatbot() {
         setInput = setDoctorInput;
         setMessages = setDoctorMessages;
         setIsLoading = setIsLoadingChatDoctors;
+        reference_content = doctorReference
         messages = doctorMessages;
         break;
       default:
         return;
     }
+
+    console.log("Reference content: ", reference_content)
+    console.log("Hospital Reference content: ", hospitalReference)
 
     if (input.trim() !== '' || base64Image || videoBlob) {
       setMessages([...messages, { role: 'user', content: input }]);
@@ -351,7 +359,8 @@ export default function HealthcareAIChatbot() {
         query: input,
         chat_messages: messages,
         image: base64Image,
-        video: videoBase64
+        video: videoBase64,
+        reference_content: reference_content,
       }, {
         headers: {
           'X-CSRFToken': getCSRFToken()
@@ -361,7 +370,7 @@ export default function HealthcareAIChatbot() {
           const responseMessage = response.data.response;
           console.log(`Received ${tabContent} response:`, responseMessage);
           setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
-          setFirstAidReference(responseMessage.firstaid);
+          setFirstAidReference((responseMessage.firstaid.length > 0 && responseMessage.firstaid) || '');
 
           // Clear the input and image after sending
           setInput('');
@@ -382,20 +391,22 @@ export default function HealthcareAIChatbot() {
           if (tabContent === 'chat') {
             if (userLocation.latitude && userLocation.longitude) {
 
-            axios.post('http://localhost:8000/api/hospitals/', {
-              latitude: userLocation.latitude,
-              longitude: userLocation.longitude,
-              page: hospitalPage // Include the current page in the request
-          })
-              .then(response => {
-                setHospitals(response.data);
-                setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
-                setIsLoadingHospitals(false);
+              axios.post('http://localhost:8000/api/hospitals/', {
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+                page: hospitalPage // Include the current page in the request
               })
-              .catch(error => {
-                console.error('Error fetching hospitals:', error);
-                setIsLoadingHospitals(false);
-              });
+                .then(response => {
+                  setHospitals(prev => [...prev, ...response.data.hospitals]);
+                  setTotalHospitalPages(response.data.total_pages);
+                  setHospitalPage(prev => prev + 1);
+                  setIsLoadingHospitals(false);
+                  setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
+                })
+                .catch(error => {
+                  console.error('Error fetching hospitals:', error);
+                  setIsLoadingHospitals(false);
+                });
             }
           }
         })
@@ -520,53 +531,54 @@ export default function HealthcareAIChatbot() {
   const loadMoreHospitals = useCallback(() => {
     if (userLocation.latitude && userLocation.longitude) {
 
-    if (hospitalPage <= totalHospitalPages) {
-      setIsLoadingHospitals(true);
-      axios.post('http://localhost:8000/api/hospitals/', {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-        page: hospitalPage // Include the current page in the request
-    })
-        .then(response => {
-          setHospitals(prev => [...prev, ...response.data.hospitals]);
-          setTotalHospitalPages(response.data.total_pages);
-          setHospitalPage(prev => prev + 1);
-          setIsLoadingHospitals(false);
+      if (hospitalPage <= totalHospitalPages) {
+        setIsLoadingHospitals(true);
+        axios.post('http://localhost:8000/api/hospitals/', {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          page: hospitalPage // Include the current page in the request
         })
-        .catch(error => {
-          console.error('Error fetching hospitals:', error);
-          setIsLoadingHospitals(false);
-        });
+          .then(response => {
+            setHospitals(prev => [...prev, ...response.data.hospitals]);
+            setTotalHospitalPages(response.data.total_pages);
+            setHospitalPage(prev => prev + 1);
+            setIsLoadingHospitals(false);
+            setHospitalReference(prev => prev + ' ' + JSON.stringify(response.data));
+          })
+          .catch(error => {
+            console.error('Error fetching hospitals:', error);
+            setIsLoadingHospitals(false);
+          });
+      }
     }
-  }
   }, [hospitalPage, totalHospitalPages]);
 
-// Update the loadMoreDoctors function to handle pagination
-const loadMoreDoctors = useCallback(() => {
-  if (doctorPage <= totalDoctorPages) {
-    setIsLoadingDoctors(true);
-    axios.post(`http://localhost:8000/api/doctors/?page=${doctorPage}`, {
-      hospital_names: hospitals.map(hospital => hospital.name),
-      hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
-    })
-      .then(response => {
-        const newDoctors = response.data.doctors;
-        setDoctors(prev => {
-          // Filter out duplicates based on doctor.id
-          const existingIds = new Set(prev.map(doctor => doctor.id));
-          const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
-          return [...prev, ...uniqueNewDoctors];
-        });
-        setTotalDoctorPages(response.data.total_pages);
-        setDoctorPage(prev => prev + 1);
-        setIsLoadingDoctors(false);
+  // Update the loadMoreDoctors function to handle pagination
+  const loadMoreDoctors = useCallback(() => {
+    if (doctorPage <= totalDoctorPages) {
+      setIsLoadingDoctors(true);
+      axios.post(`http://localhost:8000/api/doctors/?page=${doctorPage}`, {
+        hospital_names: hospitals.map(hospital => hospital.name),
+        hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
       })
-      .catch(error => {
-        console.error('Error fetching doctors:', error);
-        setIsLoadingDoctors(false);
-      });
-  }
-}, [doctorPage, totalDoctorPages, hospitals]);
+        .then(response => {
+          const newDoctors = response.data.doctors;
+          setDoctors(prev => {
+            // Filter out duplicates based on doctor.id
+            const existingIds = new Set(prev.map(doctor => doctor.id));
+            const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
+            return [...prev, ...uniqueNewDoctors];
+          });
+          setTotalDoctorPages(response.data.total_pages);
+          setDoctorPage(prev => prev + 1);
+          setIsLoadingDoctors(false);
+        })
+        .catch(error => {
+          console.error('Error fetching doctors:', error);
+          setIsLoadingDoctors(false);
+        });
+    }
+  }, [doctorPage, totalDoctorPages, hospitals]);
 
   useEffect(() => {
     loadMoreHospitals();
@@ -587,8 +599,6 @@ const loadMoreDoctors = useCallback(() => {
   };
 
 
-  const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -617,35 +627,17 @@ const loadMoreDoctors = useCallback(() => {
     }
   }, [currentTab]);
 
-  useEffect(() => {
-    if (userLocation.latitude && userLocation.longitude) {
-        console.log("userLocation: ", userLocation);
-
-        // Fetch hospitals using the user's location and current page
-        axios.post('http://localhost:8000/api/hospitals/', {
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude,
-            page: hospitalPage // Include the current page in the request
-        })
-        .then(response => {
-            setHospitals(prevHospitals => [...prevHospitals, ...response.data.hospitals]); // Append new hospitals
-            setTotalHospitalPages(response.data.total_pages);
-            setIsLoadingHospitals(false);
-        })
-        .catch(error => {
-            console.error('Error fetching hospitals:', error);
-            setIsLoadingHospitals(false);
-        });
-    }
-}, [userLocation, hospitalPage]); // Add hospitalPage as a dependency
-
-
+useEffect(() => {
+  if (userLocation.latitude && userLocation.longitude && hospitalPage <= totalHospitalPages) {
+    fetchHospitals(hospitalPage);
+  }
+}, [userLocation, hospitalPage]);
   return (
     <>
 
 
       <Card className="w-full mainC">
-      <RequestCountDisplay requestCount={requestCount} setRequestCount={setRequestCount} />
+        <RequestCountDisplay requestCount={requestCount} setRequestCount={setRequestCount} />
 
         <CardHeader>
           <CardTitle>AI Health Assistant</CardTitle>
