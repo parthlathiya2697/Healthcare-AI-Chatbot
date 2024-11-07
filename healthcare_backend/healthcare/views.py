@@ -79,13 +79,11 @@ def chat_openai(request):
         chat_messages = data.get('chat_messages', [])
         image_data = data.get('image', None)  # Get the image if present
         video_data = data.get('video', None)  # Get the video if present
+        reference_content = data.get('reference_content', '')
 
         # Save video data by converting frontend video blob to mp4 file
         if video_data:
-            # Decode the base64 encoded video data
             video_bytes = base64.b64decode(video_data.split(',')[1])
-
-            # Generate a unique filename for the video
             video_filename = f"video_{uuid.uuid4()}.mp4"
 
             # # Save the video to the desired location
@@ -104,7 +102,8 @@ def chat_openai(request):
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     # Prepare the system message
-    system_message = "You are a helpful assistant. \n\n[ Relevant info: {relevant_document}]. User Chat till this point: " + str(chat_messages)
+    system_message = f"You are a helpful assistant. This is the refereence content: {reference_content}"
+
 
     # # Create a chat completion request
     # if image_data and user_input:
@@ -163,7 +162,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 @csrf_exempt
 def chat_gemini(request):
-
+    raise NotImplementedError
     if settings.request_count >= settings.request_count_max:
         return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
     
@@ -180,9 +179,15 @@ def chat_gemini(request):
             video_bytes = base64.b64decode(video_data.split(',')[1])
             video_filename = f"video_{uuid.uuid4()}.mp4"
 
+            # # Save the video to the desired location
+            # with open(os.path.join('./', video_filename), 'wb') as f:
+            #     f.write(video_bytes)
+
+            # # Update the video_data with the saved filename
+            # video_data = video_filename    
+
         # Retrieve the most relevant document chunks
         relevant_document = vector_store.similarity_search(user_input)
-        relevant_document = ''
 
         print(f'relevant_document: {relevant_document}')
 

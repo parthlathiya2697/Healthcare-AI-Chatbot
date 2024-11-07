@@ -23,7 +23,7 @@ import ImageModal from './ImageModal';
 import RequestCountDisplay from './RequestCountDisplay';
 import VideoDialog from './VideoDialog';
 import VideoModal from './VideoModal';
-
+import MediaModal from './MediaModal';
 
 export default function HealthcareAIChatbot() {
 
@@ -76,6 +76,9 @@ export default function HealthcareAIChatbot() {
   const [totalHospitalPages, setTotalHospitalPages] = useState(1);
   const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [mediaSrc, setMediaSrc] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
 
   const fetchHospitals = useCallback((page: number) => {
@@ -218,7 +221,6 @@ export default function HealthcareAIChatbot() {
   }
 
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
-
     e.preventDefault(); // Prevent default form submission behavior
     // return if request count exceeds the limit
     console.log("Handle send message from tab: ", tabContent)
@@ -277,7 +279,15 @@ export default function HealthcareAIChatbot() {
     console.log("Selected reference content: ", reference_content)
 
     if (input.trim() !== '' || base64Image || videoBlob) {
-      setMessages([...messages, { role: 'user', content: input }]);
+      // Add the image or video to the chat messages
+      if (base64Image) {
+        setMessages([...messages, { role: 'user', content: input, image: base64Image }]);
+      } else if (videoBlob) {
+        const videoBase64 = await toBase64(videoBlob);
+        setMessages([...messages, { role: 'user', content: input, video: videoBase64 }]);
+      } else {
+        setMessages([...messages, { role: 'user', content: input }]);
+      }
       setIsLoading(true);
 
       const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
@@ -487,6 +497,12 @@ export default function HealthcareAIChatbot() {
     setDoctorSortOrder(doctorSortOrder === 'asc' ? 'desc' : 'asc');
   };
 
+  const handleMediaThumbnailClick = (src: string, type: 'image' | 'video') => {
+    setMediaSrc(src);
+    setMediaType(type);
+    setIsMediaModalOpen(true);
+  };
+
 
 
   // Initialization and data fetching
@@ -656,26 +672,54 @@ export default function HealthcareAIChatbot() {
             </TabsList>
             <TabsContent value="chat">
               <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto" ref={chatScrollRef}>
+                {/* Render chat messages */}
                 {chatMessages.map((msg, index) => (
                   <div key={index} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'} mb-4`}>
                     <div className={`rounded-lg p-2 max-w-[70%] ${msg.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      {msg.image && (
+                        <img
+                          src={msg.image}
+                          alt="Uploaded"
+                          className="w-16 h-16 mt-2 rounded cursor-pointer"
+                          onClick={() => handleMediaThumbnailClick(msg.image, 'image')}
+                        />
+                      )}
+                      {msg.video && (
+                        <video
+                          src={msg.video}
+                          className="w-16 h-16 mt-2 rounded cursor-pointer"
+                          onClick={() => handleMediaThumbnailClick(msg.video, 'video')}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
+
+                {/* Media Modal */}
+                <MediaModal
+                  mediaSrc={mediaSrc}
+                  isOpen={isMediaModalOpen}
+                  onClose={() => setIsMediaModalOpen(false)}
+                  mediaType={mediaType}
+                />
               </div>
 
               <form onSubmit={(e) => handleSendMessage(e, 'chat')} className="flex items-center mt-4">
-                <div className="flex items-start w-full border rounded p-2" style={{ minHeight: '4rem' }}> {/* Adjusted for flexible height */}
+                <div className="flex items-start w-full border rounded p-2" style={{ minHeight: '4rem' }}>
+                  {/* Adjusted for flexible height */}
                   {isLoadingChat ? (
                     <div className="flex-grow flex justify-center items-center">
                       <CircularProgress size={24} />
                     </div>
                   ) : (
-                    <div className="flex w-full"> {/* Ensure items are aligned to start */}
-                      <div className="flex items-start"> {/* Align items to the start */}
+                    <div className="flex w-full">
+                      {/* Ensure items are aligned to start */}
+                      <div className="flex items-start">
+                        {/* Align items to the start */}
                         {base64Image && (
-                          <div className="relative mr-4 w-12 h-12 flex-shrink-0"> {/* Prevent shrinking */}
+                          <div className="relative mr-4 w-12 h-12 flex-shrink-0">
+                            {/* Prevent shrinking */}
                             <ImageIcon className="w-4 h-4 mt-1" />
                             <div className="relative w-full h-full">
                               <img
@@ -684,12 +728,23 @@ export default function HealthcareAIChatbot() {
                                 className="w-full h-full object-cover rounded cursor-pointer"
                                 onClick={handleImageThumbnailClick}
                               />
-                              <CircleX onClick={discardImage} style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'white', borderRadius: '100px', cursor: 'pointer' }} />
+                              <CircleX
+                                onClick={discardImage}
+                                style={{
+                                  position: 'absolute',
+                                  top: '-10px',
+                                  right: '-10px',
+                                  background: 'white',
+                                  borderRadius: '100px',
+                                  cursor: 'pointer',
+                                }}
+                              />
                             </div>
                           </div>
                         )}
                         {videoBlob && (
-                          <div className="relative mr-4 w-12 h-12 flex-shrink-0"> {/* Prevent shrinking */}
+                          <div className="relative mr-4 w-12 h-12 flex-shrink-0">
+                            {/* Prevent shrinking */}
                             <VideoIcon className="w-4 h-4 mt-1" />
                             <div className="relative w-full h-full">
                               <video
@@ -697,7 +752,17 @@ export default function HealthcareAIChatbot() {
                                 className="w-full h-full object-cover rounded cursor-pointer"
                                 onClick={handleVideoThumbnailClick}
                               />
-                              <CircleX onClick={discardVideo} style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'white', borderRadius: '100px', cursor: 'pointer' }} />
+                              <CircleX
+                                onClick={discardVideo}
+                                style={{
+                                  position: 'absolute',
+                                  top: '-10px',
+                                  right: '-10px',
+                                  background: 'white',
+                                  borderRadius: '100px',
+                                  cursor: 'pointer',
+                                }}
+                              />
                             </div>
                           </div>
                         )}
@@ -731,8 +796,6 @@ export default function HealthcareAIChatbot() {
                 </Button>
                 <Button type="submit" className="ml-2">Send</Button>
               </form>
-
-
             </TabsContent>
             <TabsContent value="firstAid">
               <Card>
