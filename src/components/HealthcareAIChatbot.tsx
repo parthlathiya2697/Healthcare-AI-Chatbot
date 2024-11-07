@@ -515,7 +515,7 @@ export default function HealthcareAIChatbot() {
 
   // Location and hospital fetching
   useEffect(() => {
-    if (currentTab === 'hospitals' && !userLocation.latitude && !userLocation.longitude) {
+    if (currentTab === 'hospitals' || currentTab === 'doctors') {
       getUserLocation();
     }
   }, [currentTab]);
@@ -601,7 +601,7 @@ export default function HealthcareAIChatbot() {
       })
         .then(response => {
           const newDoctors = response.data.doctors;
-          console.log("New doctors loadMoreDoctors: ", newDoctors)
+          console.log("loadMoreDoctors: ", newDoctors)
           setDoctors(prev => {
             // Filter out duplicates based on doctor.id
             const existingIds = new Set(prev.map(doctor => doctor.id));
