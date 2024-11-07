@@ -71,7 +71,7 @@ def chat_openai(request):
     
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
+    relevant_document = ''
     # Parse JSON body data
     try:
         data = json.loads(request.body)
@@ -94,15 +94,15 @@ def chat_openai(request):
             # video_data = video_filename    
 
         # Retrieve the most relevant document chunks
-        relevant_document = vector_store.similarity_search(user_input)
-
-        print(f'relevant_document: {relevant_document}')
+        if user_input:
+            relevant_document = vector_store.similarity_search(user_input)
+            print(f'relevant_document: {relevant_document}')
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     # Prepare the system message
-    system_message = f"You are a helpful assistant. This is the refereence content: {reference_content}"
+    system_message = f"You are a helpful assistant. This is the refereence content: {reference_content or ''}"
 
 
     # # Create a chat completion request
@@ -166,6 +166,7 @@ def chat_gemini(request):
     if settings.request_count >= settings.request_count_max:
         return JsonResponse({'error': 'Request limit exceeded'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
     
+    relevant_document = ''
 
     try:
         data = json.loads(request.body)
@@ -176,8 +177,9 @@ def chat_gemini(request):
         reference_content = data.get('reference_content', '')
 
         if video_data:
-            video_bytes = base64.b64decode(video_data.split(',')[1])
-            video_filename = f"video_{uuid.uuid4()}.mp4"
+            pass
+            # video_bytes = base64.b64decode(video_data.split(',')[1])
+            # video_filename = f"video_{uuid.uuid4()}.mp4"
 
             # # Save the video to the desired location
             # with open(os.path.join('./', video_filename), 'wb') as f:
@@ -187,9 +189,9 @@ def chat_gemini(request):
             # video_data = video_filename    
 
         # Retrieve the most relevant document chunks
-        relevant_document = vector_store.similarity_search(user_input)
-
-        print(f'relevant_document: {relevant_document}')
+        if user_input:
+            relevant_document = vector_store.similarity_search(user_input)
+            print(f'relevant_document: {relevant_document}')
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
@@ -207,14 +209,20 @@ def chat_gemini(request):
                 Continue the conversation based on the user's request. Prioritize responding directly to the user’s question, using the relevant document only if it is necessary to provide additional context or clarification.
 
                 Relevant Document (for reference only):
-                {relevant_document}
+                {relevant_document or ''}
 
                 Note: Along with the current user medical condition related convervation, provide all possible preliminary First-Aid suggestions.
 
                 Please provide your response below (output in JSON (keys: response, firstaid). Do not inlude markup language in the response):
                 User: {user_input}
                 """
-    response = model.generate_content(prompt)
+    
+    try:
+        response = model.generate_content(prompt)
+    except Exception as e:
+        print(f'Error: {e}')
+        return JsonResponse({'error': str(e)}, status=500)
+    
     response = response.text.replace("```json","").replace("```","").strip()
     print(f'response: {response}')
     response = json.loads(response)

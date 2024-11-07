@@ -149,3 +149,5 @@ APPEND_SLASH = False
 import os
 request_count = int(os.environ['DEMO_REQUEST_COUNT'])
 request_count_max = int(os.environ['DEMO_MAX_REQUEST_COUNT'])
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
