@@ -24,6 +24,9 @@ import RequestCountDisplay from './RequestCountDisplay';
 import VideoDialog from './VideoDialog';
 import VideoModal from './VideoModal';
 import MediaModal from './MediaModal';
+import { faUser } from '@fortawesome/free-solid-svg-icons'; // Import the user icon
+import { Dialog, DialogContent, DialogTitle } from '@mui/material'; // Import Dialog components for material view
+
 
 export default function HealthcareAIChatbot() {
 
@@ -79,6 +82,34 @@ export default function HealthcareAIChatbot() {
   const [mediaSrc, setMediaSrc] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  // State for managing profile dialog visibility
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+
+  // States for user profile information
+  const [userName, setUserName] = useState('');
+  const [userGender, setUserGender] = useState('');
+  const [userBirthdate, setUserBirthdate] = useState('');
+  const [userSymptoms, setUserSymptoms] = useState('');
+  const [userDescription, setUserDescription] = useState('');
+
+  // JSON object to store user details
+  const userDetails = {
+    name: userName,
+    gender: userGender,
+    birthdate: userBirthdate,
+    symptoms: userSymptoms,
+    description: userDescription,
+  };
+
+  // Function to handle profile icon click
+  const handleProfileIconClick = () => {
+    setIsProfileDialogOpen(true);
+  };
+
+  // Function to handle profile dialog close
+  const handleProfileDialogClose = () => {
+    setIsProfileDialogOpen(false);
+  };
 
 
   const fetchHospitals = useCallback((page: number) => {
@@ -229,7 +260,7 @@ export default function HealthcareAIChatbot() {
       console.log("Request count exceeded the limit")
       return
     }
-  
+
     e.preventDefault();
     let input = '';
     let setInput = () => { };
@@ -237,7 +268,7 @@ export default function HealthcareAIChatbot() {
     let setIsLoading = () => { };
     let reference_content = () => { };
     let messages = [];
-  
+
     // Determine which tab is active and set the corresponding state functions
     switch (tabContent) {
       case 'chat':
@@ -275,31 +306,31 @@ export default function HealthcareAIChatbot() {
       default:
         return;
     }
-  
+
     console.log("Selected reference content: ", reference_content)
-  
+
     // Add the image or video to the chat messages
     const newMessages = [...messages];
     if (base64Image) {
       newMessages.push({ role: 'user', content: '', image: base64Image });
-    } 
+    }
     if (videoBlob) {
       const videoBase64 = await toBase64(videoBlob);
       newMessages.push({ role: 'user', content: '', video: videoBase64 });
-    } 
+    }
     if (input.trim() !== '') {
       newMessages.push({ role: 'user', content: input });
     }
     setMessages(newMessages);
-  
+
     if (input.trim() !== '' || base64Image || videoBlob) {
       setIsLoading(true);
-  
+
       const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
-  
+
       // Call the appropriate API endpoint based on the tab
       const apiEndpoint = `http://localhost:8000/api/chat_gemini/`;
-  
+
       try {
         const response = await axios.post(apiEndpoint, {
           query: input,
@@ -312,27 +343,27 @@ export default function HealthcareAIChatbot() {
             'X-CSRFToken': getCSRFToken()
           }
         });
-  
+
         const responseMessage = response.data.response;
         console.log(`Received ${tabContent} response:`, responseMessage);
         setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
         setFirstAidReference((responseMessage.firstaid.length > 0 && responseMessage.firstaid) || '');
-  
+
         // Clear the input and image after sending
         setInput('');
         setBase64Image(null);
         setIsLoading(false);
         setRequestCount((requestCount ?? 0) + 1);
-  
+
         // Scroll to the bottom of the chat area
         if (chatScrollRef.current) {
           chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
         }
-  
+
         if (chatInputRef.current) {
           chatInputRef.current.focus();
         }
-  
+
         // Now get hospitals and doctors
         if (tabContent === 'chat') {
           if (userLocation.latitude && userLocation.longitude) {
@@ -341,7 +372,7 @@ export default function HealthcareAIChatbot() {
               longitude: userLocation.longitude,
               page: hospitalPage // Include the current page in the request
             });
-  
+
             const newHospitals = hospitalResponse.data.hospitals;
             setHospitals(prev => {
               const existingIds = new Set(prev.map(hospital => hospital.id));
@@ -654,6 +685,74 @@ export default function HealthcareAIChatbot() {
 
   return (
     <>
+      {/* Profile Icon */}
+      <div className="absolute top-4 right-4">
+        <Button
+          onClick={handleProfileIconClick}
+          className="bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition duration-300"
+          style={{borderRadius: '100px', boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 10px 3px', width: '40px', height: '40px'}}
+        >
+          <FontAwesomeIcon icon={faUser} className="w-6 h-6 text-gray-700" />
+        </Button>
+      </div>
+
+      {/* Profile Dialog */}
+      <Dialog open={isProfileDialogOpen} onClose={handleProfileDialogClose}>
+        <DialogTitle>User Profile</DialogTitle>
+        <DialogContent>
+          <form>
+            <div className="mb-4">
+              <label>Name:</label>
+              <Input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label>Gender:</label>
+              <Input
+                type="text"
+                value={userGender}
+                onChange={(e) => setUserGender(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label>Birthdate:</label>
+              <Input
+                type="date"
+                value={userBirthdate}
+                onChange={(e) => setUserBirthdate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label>Current Symptoms/Diseases:</label>
+              <Input
+                type="text"
+                value={userSymptoms}
+                onChange={(e) => setUserSymptoms(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label>Description:</label>
+              <textarea
+                value={userDescription}
+                onChange={(e) => setUserDescription(e.target.value)}
+                placeholder="Enter any additional information about yourself..."
+                className="w-full border border-gray-300 rounded p-2"
+              />
+            </div>
+            <div className="flex justify-around">
+              <Button onClick={handleProfileDialogClose}>Close</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Card className="w-full mainC">
         <RequestCountDisplay requestCount={requestCount} setRequestCount={setRequestCount} />
         <CardHeader>
