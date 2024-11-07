@@ -92,14 +92,6 @@ export default function HealthcareAIChatbot() {
   const [userSymptoms, setUserSymptoms] = useState('');
   const [userDescription, setUserDescription] = useState('');
 
-  // JSON object to store user details
-  const userDetails = {
-    name: userName,
-    gender: userGender,
-    birthdate: userBirthdate,
-    symptoms: userSymptoms,
-    description: userDescription,
-  };
 
   // Function to handle profile icon click
   const handleProfileIconClick = () => {
@@ -251,6 +243,17 @@ export default function HealthcareAIChatbot() {
     return null;
   }
 
+  // Function to format user profile data
+  function formatUserProfile() {
+    return `User Profile:
+  Name: ${userName}
+  Gender: ${userGender}
+  Birthdate: ${userBirthdate}
+  Current User Symptoms: ${userSymptoms}
+  Other User Description: ${userDescription}\n\n`;
+  }
+
+
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
     e.preventDefault(); // Prevent default form submission behavior
     // return if request count exceeds the limit
@@ -306,6 +309,11 @@ export default function HealthcareAIChatbot() {
       default:
         return;
     }
+
+    // Add user profile data to the reference content
+    const userProfile = formatUserProfile();
+    reference_content = userProfile + reference_content;
+
 
     console.log("Selected reference content: ", reference_content)
 
@@ -690,7 +698,7 @@ export default function HealthcareAIChatbot() {
         <Button
           onClick={handleProfileIconClick}
           className="bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition duration-300"
-          style={{borderRadius: '100px', boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 10px 3px', width: '40px', height: '40px'}}
+          style={{ borderRadius: '100px', boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 10px 3px', width: '40px', height: '40px' }}
         >
           <FontAwesomeIcon icon={faUser} className="w-6 h-6 text-gray-700" />
         </Button>
