@@ -4,8 +4,8 @@ import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from openai import OpenAI
-from langchain.vectorstores import FAISS
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
 # from langchain.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
