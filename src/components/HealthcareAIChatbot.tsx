@@ -229,7 +229,7 @@ export default function HealthcareAIChatbot() {
       console.log("Request count exceeded the limit")
       return
     }
-
+  
     e.preventDefault();
     let input = '';
     let setInput = () => { };
@@ -237,7 +237,7 @@ export default function HealthcareAIChatbot() {
     let setIsLoading = () => { };
     let reference_content = () => { };
     let messages = [];
-
+  
     // Determine which tab is active and set the corresponding state functions
     switch (tabContent) {
       case 'chat':
@@ -275,91 +275,90 @@ export default function HealthcareAIChatbot() {
       default:
         return;
     }
-
+  
     console.log("Selected reference content: ", reference_content)
-
+  
+    // Add the image or video to the chat messages
+    const newMessages = [...messages];
+    if (base64Image) {
+      newMessages.push({ role: 'user', content: '', image: base64Image });
+    } 
+    if (videoBlob) {
+      const videoBase64 = await toBase64(videoBlob);
+      newMessages.push({ role: 'user', content: '', video: videoBase64 });
+    } 
+    if (input.trim() !== '') {
+      newMessages.push({ role: 'user', content: input });
+    }
+    setMessages(newMessages);
+  
     if (input.trim() !== '' || base64Image || videoBlob) {
-      // Add the image or video to the chat messages
-      if (base64Image) {
-        setMessages([...messages, { role: 'user', content: input, image: base64Image }]);
-      } else if (videoBlob) {
-        const videoBase64 = await toBase64(videoBlob);
-        setMessages([...messages, { role: 'user', content: input, video: videoBase64 }]);
-      } else {
-        setMessages([...messages, { role: 'user', content: input }]);
-      }
       setIsLoading(true);
-
+  
       const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
-
+  
       // Call the appropriate API endpoint based on the tab
       const apiEndpoint = `http://localhost:8000/api/chat_gemini/`;
-
-      axios.post(apiEndpoint, {
-        query: input,
-        chat_messages: messages,
-        image: base64Image,
-        video: videoBase64,
-        reference_content: reference_content,
-      }, {
-        headers: {
-          'X-CSRFToken': getCSRFToken()
-        }
-      })
-        .then(response => {
-          const responseMessage = response.data.response;
-          console.log(`Received ${tabContent} response:`, responseMessage);
-          setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
-          setFirstAidReference((responseMessage.firstaid.length > 0 && responseMessage.firstaid) || '');
-
-          // Clear the input and image after sending
-          setInput('');
-          setBase64Image(null);
-          setIsLoading(false);
-          setRequestCount((requestCount ?? 0) + 1);
-
-          // Scroll to the bottom of the chat area
-          if (chatScrollRef.current) {
-            chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+  
+      try {
+        const response = await axios.post(apiEndpoint, {
+          query: input,
+          chat_messages: newMessages,
+          image: base64Image,
+          video: videoBase64,
+          reference_content: reference_content,
+        }, {
+          headers: {
+            'X-CSRFToken': getCSRFToken()
           }
-
-          if (chatInputRef.current) {
-            chatInputRef.current.focus();
-          }
-
-          // Now get hospitals and doctors
-          if (tabContent === 'chat') {
-            if (userLocation.latitude && userLocation.longitude) {
-
-              axios.post('http://localhost:8000/api/hospitals/', {
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                page: hospitalPage // Include the current page in the request
-              })
-                .then(response => {
-                  const newHospitals = response.data.hospitals;
-                  setHospitals(prev => {
-                    const existingIds = new Set(prev.map(hospital => hospital.id));
-                    const uniqueNewHospitals = newHospitals.filter(hospital => !existingIds.has(hospital.id));
-                    return [...prev, ...uniqueNewHospitals];
-                  });
-                  setTotalHospitalPages(response.data.total_pages);
-                  setHospitalPage(prev => prev + 1);
-                  setIsLoadingHospitals(false);
-                  setHospitalReference(JSON.stringify(response.data));
-                })
-                .catch(error => {
-                  console.error('Error fetching hospitals:', error);
-                  setIsLoadingHospitals(false);
-                });
-            }
-          }
-        })
-        .catch(error => {
-          console.error(`Error fetching ${tabContent} response:`, error);
-          setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't fetch the ${tabContent} response at the moment.` }]);
-          setIsLoading(false);
         });
+  
+        const responseMessage = response.data.response;
+        console.log(`Received ${tabContent} response:`, responseMessage);
+        setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
+        setFirstAidReference((responseMessage.firstaid.length > 0 && responseMessage.firstaid) || '');
+  
+        // Clear the input and image after sending
+        setInput('');
+        setBase64Image(null);
+        setIsLoading(false);
+        setRequestCount((requestCount ?? 0) + 1);
+  
+        // Scroll to the bottom of the chat area
+        if (chatScrollRef.current) {
+          chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+        }
+  
+        if (chatInputRef.current) {
+          chatInputRef.current.focus();
+        }
+  
+        // Now get hospitals and doctors
+        if (tabContent === 'chat') {
+          if (userLocation.latitude && userLocation.longitude) {
+            const hospitalResponse = await axios.post('http://localhost:8000/api/hospitals/', {
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
+              page: hospitalPage // Include the current page in the request
+            });
+  
+            const newHospitals = hospitalResponse.data.hospitals;
+            setHospitals(prev => {
+              const existingIds = new Set(prev.map(hospital => hospital.id));
+              const uniqueNewHospitals = newHospitals.filter(hospital => !existingIds.has(hospital.id));
+              return [...prev, ...uniqueNewHospitals];
+            });
+            setTotalHospitalPages(hospitalResponse.data.total_pages);
+            setHospitalPage(prev => prev + 1);
+            setIsLoadingHospitals(false);
+            setHospitalReference(JSON.stringify(hospitalResponse.data));
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching ${tabContent} response:`, error);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't fetch the ${tabContent} response at the moment.` }]);
+        setIsLoading(false);
+      }
     }
   }
 
