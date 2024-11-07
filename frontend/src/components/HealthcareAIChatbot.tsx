@@ -99,6 +99,11 @@ export default function HealthcareAIChatbot() {
     setIsWomenFriendly(event.target.checked);
   };
 
+  // Filter hospitals and doctors based on the women-friendly flag
+  const filteredHospitals = hospitals.filter(hospital => !isWomenFriendly || hospital.women_friendly);
+  const filteredDoctors = doctors.filter(doctor => !isWomenFriendly || doctor.women_friendly);
+
+
 
   // Function to handle profile icon click
   const handleProfileIconClick = () => {
@@ -518,24 +523,28 @@ export default function HealthcareAIChatbot() {
   };
 
 
-  const sortedHospitals = [...hospitals].sort((a, b) => {
-    const order = sortOrder === 'asc' ? 1 : -1
-    if (hospitalSort === 'distance') return (a.distance - b.distance) * order
-    return (b[hospitalSort] - a[hospitalSort]) * order
-  })
+  const sortedHospitals = [...hospitals]
+    .filter(hospital => !isWomenFriendly || hospital.women_friendly)
+    .sort((a, b) => {
+      const order = sortOrder === 'asc' ? 1 : -1;
+      if (hospitalSort === 'distance') return (a.distance - b.distance) * order;
+      return (b[hospitalSort] - a[hospitalSort]) * order;
+    });
 
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
   }
 
-  const sortedDoctors = [...doctors].sort((a, b) => {
-    const order = doctorSortOrder === 'asc' ? 1 : -1;
-    if (doctorSort === 'rating') return (b.rating - a.rating) * order;
-    if (doctorSort === 'behavior') return (b.behavior - a.behavior) * order;
-    if (doctorSort === 'expertise') return (b.expertise - a.expertise) * order;
-    return 0;
-  });
+  const sortedDoctors = [...doctors]
+    .filter(doctor => !isWomenFriendly || doctor.women_friendly)
+    .sort((a, b) => {
+      const order = doctorSortOrder === 'asc' ? 1 : -1;
+      if (doctorSort === 'rating') return (b.rating - a.rating) * order;
+      if (doctorSort === 'behavior') return (b.behavior - a.behavior) * order;
+      if (doctorSort === 'expertise') return (b.expertise - a.expertise) * order;
+      return 0;
+    });
 
 
   const toggleDoctorSortOrder = () => {
@@ -1012,20 +1021,9 @@ export default function HealthcareAIChatbot() {
                                 <h3 className="font-semibold">{hospital.name}</h3>
                                 <p className="text-sm text-muted-foreground">{hospital.address}</p>
                                 <p className="text-sm">Distance: {hospital.distance} km</p>
+                                <p className="text-sm">Women Friendly: {hospital.women_friendly ? 'Yes' : 'No'}</p>
                                 <div className="flex items-center mt-1 space-x-4">
-                                  <Badge variant="secondary" className={hospitalSort === 'rating' ? 'bg-primary text-primary-foreground' : ''}>
-                                    <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                                    <span>{hospital.rating.toFixed(1)}</span>
-                                  </Badge>
-                                  <Badge variant="secondary" className={hospitalSort === 'comfort' ? 'bg-primary text-primary-foreground' : ''}>
-                                    Comfort: {hospital.comfort.toFixed(1)}
-                                  </Badge>
-                                  <Badge variant="secondary" className={hospitalSort === 'staff_behavior' ? 'bg-primary text-primary-foreground' : ''}>
-                                    Staff: {hospital.staff_behavior.toFixed(1)}
-                                  </Badge>
-                                  <Badge variant="secondary" className={hospitalSort === 'treatment_score' ? 'bg-primary text-primary-foreground' : ''}>
-                                    Treatment: {hospital.treatment_score.toFixed(1)}
-                                  </Badge>
+                                  {/* ... existing badges ... */}
                                 </div>
                               </div>
                             </li>
@@ -1113,6 +1111,7 @@ export default function HealthcareAIChatbot() {
                               <div>
                                 <CardTitle>{doctor.name}</CardTitle>
                                 <CardDescription>{doctor.specialty ? `${doctor.specialty} | ` : ''} <a href={doctor.hospital_website}>{doctor.hospital_name}</a></CardDescription>
+                                <p className="text-sm">Women Friendly: {doctor.women_friendly ? 'Yes' : 'No'}</p>
                               </div>
                               <Button
                                 variant="outline"
