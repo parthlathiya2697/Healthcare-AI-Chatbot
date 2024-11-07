@@ -41,6 +41,8 @@ export default function HealthcareAIChatbot() {
   const doctorScrollRef = useRef<HTMLDivElement | null>(null);
   const [doctors, setDoctors] = useState([]);
   const [doctorReference, setDoctorReference] = useState('');
+  const [doctorSort, setDoctorSort] = useState('rating');
+  const [doctorSortOrder, setDoctorSortOrder] = useState('asc');
   const [firstAidInput, setFirstAidInput] = useState('');
   const [firstAidMessages, setFirstAidMessages] = useState([]);
   const firstAidScrollRef = useRef<HTMLDivElement | null>(null);
@@ -472,6 +474,19 @@ export default function HealthcareAIChatbot() {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
   }
 
+  const sortedDoctors = [...doctors].sort((a, b) => {
+    const order = doctorSortOrder === 'asc' ? 1 : -1;
+    if (doctorSort === 'rating') return (b.rating - a.rating) * order;
+    if (doctorSort === 'behavior') return (b.behavior - a.behavior) * order;
+    if (doctorSort === 'expertise') return (b.expertise - a.expertise) * order;
+    return 0;
+  });
+
+
+  const toggleDoctorSortOrder = () => {
+    setDoctorSortOrder(doctorSortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
 
 
   // Initialization and data fetching
@@ -876,13 +891,28 @@ export default function HealthcareAIChatbot() {
                   <CircularProgress />
                 </div>
               ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Available Doctors</CardTitle>
-                  </CardHeader>
+                <div>
+                  <div className="flex flex-row items-center justify-between mb-4">
+                    <div>Available Doctors</div>
+                    <div className="flex items-center">
+                      <Select value={doctorSort} onValueChange={setDoctorSort}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rating">Rating</SelectItem>
+                          <SelectItem value="behavior">Behavior</SelectItem>
+                          <SelectItem value="expertise">Expertise</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={toggleDoctorSortOrder} size="icon" variant="ghost" className="ml-2">
+                        {doctorSortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
                   <CardContent>
                     <ul className="space-y-4">
-                      {doctors.map(doctor => (
+                      {sortedDoctors.map(doctor => (
                         <li key={doctor.id}>
                           <Card className="mb-4">
                             <CardContent className="flex flex-row items-center justify-between">
@@ -958,7 +988,7 @@ export default function HealthcareAIChatbot() {
                       <Button type="submit">Ask</Button>
                     </form>
                   </CardFooter>
-                </Card>
+                </div>
               )}
               {doctorMessages.length > 0 && (
                 <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={doctorScrollRef}>
