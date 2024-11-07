@@ -21,6 +21,7 @@ class Hospital(models.Model):
     staff_behavior = models.FloatField(default=0.0)
     treatment_score = models.FloatField(default=0.0)
     distance = models.FloatField(default=0.0)
+    women_friendly = models.BooleanField(default=False)
 
 
 
@@ -43,6 +44,7 @@ class Doctor(models.Model):
     hospital_latitude = models.FloatField(default=0.0)
     hospital_name = models.CharField(max_length=255, default='')
     hospital_website = models.CharField(max_length=255, default='')
+    women_friendly = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('name', 'hospital_longitude', 'hospital_latitude')

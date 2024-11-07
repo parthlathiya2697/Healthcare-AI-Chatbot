@@ -15,7 +15,7 @@ from openai import OpenAI
 import google.generativeai as genai
 from .models import Hospital, Doctor
 from healthcare_backend import settings
-from backend.healthcare.utils import create_vector_store, convert_to_wav
+from backend.healthcare.utils import create_vector_store, convert_to_wav, fetch_doctors
 
 logger = logging.getLogger(__name__)
 
@@ -394,12 +394,53 @@ def fetch_and_store_hospitals(request):
                 hospitals = results['local_results']
                 for hospital in hospitals:
                     Hospital.objects.create(
-                        name=hospital.get('title'),
-                        address=hospital.get('address'),
-                        longitude=hospital.get('gps_coordinates', {}).get('longitude'),
-                        latitude=hospital.get('gps_coordinates', {}).get('latitude'),
-                        # ... other fields ...
+                        name=hospital.get('title', 'Unknown'),
+                        address=hospital.get('address', 'Unknown'),
+                        longitude=hospital.get('gps_coordinates', {}).get('longitude', 0.0),
+                        latitude=hospital.get('gps_coordinates', {}).get('latitude', 0.0),
+                        gps_coordinates=hospital.get('gps_coordinates', {}),
+                        rating=hospital.get('rating', 0.0),
+                        reviews=hospital.get('reviews', 0),
+                        reviews_link=hospital.get('reviews_link', ''),
+                        hospital_type=hospital.get('type', 'General'),
+                        is_open=hospital.get('is_open', False),
+                        comfort=hospital.get('comfort', 'Unknown'),
+                        hours=hospital.get('hours', 'Unknown'),
+                        operating_hours=hospital.get('operating_hours', 'Unknown'),
+                        phone=hospital.get('phone', 'Unknown'),
+                        website=hospital.get('website', ''),
+                        user_review=hospital.get('user_review', ''),
+                        thumbnail=hospital.get('thumbnail', ''),
+                        staff_behavior=hospital.get('staff_behavior', 'Unknown'),
+                        treatment_score=hospital.get('treatment_score', 0.0),
+                        distance=hospital.get('distance', 0.0),
+                        women_friendly=hospital.get('women_friendly', False)
                     )
+
+                    # Get hospital website link
+                    website = hospital.get('website', '')
+                        
+                    # Crawl all pages from robots.txt file and save in json structure
+                    if website:
+                        _list = fetch_doctors(hospital.get('title'), location)
+
+                        # Store the doctors data in the database
+                        for doctor in _list:
+                            Doctor.objects.create(
+                                name=doctor.get('name'),
+                                specialty=doctor.get('specialty'),
+                                rating=doctor.get('rating'),
+                                availability=doctor.get('availability'),
+                                behavior=doctor.get('behavior'),
+                                expertise=doctor.get('expertise'),
+                                feedback_sentiment=doctor.get('feedback_sentiment'),
+                                phone=doctor.get('phone'),
+                                hospital_longitude = hospital.get('gps_coordinates', {}).get('longitude'),
+                                hospital_latitude = hospital.get('gps_coordinates', {}).get('latitude'),
+                                hospital_name = hospital.get('title'),
+                                hospital_website = website,
+                                women_friendly = 0 # Todo: add logic here 
+                            )
                 return JsonResponse({'status': 'success', 'message': 'Hospitals data stored successfully.'})
             else:
                 return JsonResponse({'status': 'error', 'message': 'No hospital data found.'}, status=404)

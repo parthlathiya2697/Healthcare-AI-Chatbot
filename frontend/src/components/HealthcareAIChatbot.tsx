@@ -91,6 +91,13 @@ export default function HealthcareAIChatbot() {
   const [userBirthdate, setUserBirthdate] = useState('');
   const [userSymptoms, setUserSymptoms] = useState('');
   const [userDescription, setUserDescription] = useState('');
+  const [isWomenFriendly, setIsWomenFriendly] = useState(false);
+
+
+
+  const handleWomenFriendlyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsWomenFriendly(event.target.checked);
+  };
 
 
   // Function to handle profile icon click
@@ -961,7 +968,17 @@ export default function HealthcareAIChatbot() {
                       <CircularProgress />
                     </div>
                   ) : (
+
                     <div>
+                      <div className="flex items-center mb-4">
+                        <input
+                          type="checkbox"
+                          id="womenFriendly"
+                          checked={isWomenFriendly}
+                          onChange={handleWomenFriendlyChange}
+                        />
+                        <label htmlFor="womenFriendly" className="ml-2">Women Friendly</label>
+                      </div>
                       <div className="flex flex-row items-center justify-between">
                         <div>Nearby Hospitals</div>
                         <div className="flex items-center">
@@ -1061,6 +1078,15 @@ export default function HealthcareAIChatbot() {
               ) : (
                 <div>
                   <div className="flex flex-row items-center justify-between mb-4">
+                    <div className="flex items-center mb-4">
+                      <input
+                        type="checkbox"
+                        id="womenFriendlyDoctors"
+                        checked={isWomenFriendly}
+                        onChange={handleWomenFriendlyChange}
+                      />
+                      <label htmlFor="womenFriendlyDoctors" className="ml-2">Women Friendly</label>
+                    </div>
                     <div>Available Doctors</div>
                     <div className="flex items-center">
                       <Select value={doctorSort} onValueChange={setDoctorSort}>
