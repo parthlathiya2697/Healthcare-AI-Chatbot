@@ -40,64 +40,27 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-
 The server will be running at `http://localhost:8000/`.
 
-### Database Models
+### Project Flow
 
-The backend uses the following database models:
+The healthcare application is designed to provide users with a comprehensive platform to manage and inquire about their health-related concerns. Here's how the different sections of the application work:
 
-- **Hospital:**
-  - `name`: Name of the hospital
-  - `address`: Address of the hospital
-  - `longitude`: Longitude of the hospital
-  - `latitude`: Latitude of the hospital
-  - `gps_coordinates`: GPS coordinates of the hospital
-  - `rating`: Rating of the hospital
-  - `reviews`: Number of reviews for the hospital
-  - `reviews_link`: Link to the reviews for the hospital
-  - `hospital_type`: Type of the hospital
-  - `is_open`: Whether the hospital is open
-  - `comfort`: Comfort rating of the hospital
-  - `hours`: Operating hours of the hospital
-  - `operating_hours`: Operating hours of the hospital
-  - `phone`: Phone number of the hospital
-  - `website`: Website of the hospital
-  - `user_review`: User review of the hospital
-  - `thumbnail`: Thumbnail image of the hospital
-  - `staff_behavior`: Staff behavior rating of the hospital
-  - `treatment_score`: Treatment score of the hospital
-  - `distance`: Distance from the user's location
+- **Main Chat Section:**
+  - Users can chat about their health problems.
+  - As users chat, the application provides real-time responses and suggestions.
 
-- **Doctor:**
-  - `name`: Name of the doctor
-  - `specialty`: Specialty of the doctor
-  - `rating`: Rating of the doctor
-  - `availability`: Availability of the doctor
-  - `behavior`: Behavior rating of the doctor
-  - `expertise`: Expertise rating of the doctor
-  - `feedback_sentiment`: Sentiment of the feedback for the doctor
-  - `phone`: Phone number of the doctor
+- **First Aid Section:**
+  - This section updates itself based on the user's chat in the main section.
+  - It provides immediate first aid advice and tips relevant to the user's health concerns.
 
-### APIs
+- **Hospitals Section:**
+  - Displays nearby hospitals based on the user's location.
+  - Users can inquire about hospital facilities, services, and more.
 
-The backend provides the following APIs:
+- **Doctors Section:**
+  - Contains a list of doctors from the displayed hospitals.
+  - Users can chat about available doctors, their specialties, and working experience.
+  - The section also provides insights into which hospitals have the most success rates by analyzing hospital data with AI.
 
-- **`/api/chat_openai/`:**  Chat with an OpenAI model.
-- **`/api/chat_gemini/`:** Chat with a Gemini model.
-- **`/api/first_aid_suggestions_openai/`:** Get first aid suggestions from an OpenAI model.
-- **`/api/hospitals_suggestions_openai/`:** Get hospital suggestions from an OpenAI model.
-- **`/api/doctors_suggestions_openai/`:** Get doctor suggestions from an OpenAI model.
-- **`/api/hospitals/`:** Get a list of hospitals.
-- **`/api/doctors/`:** Get a list of doctors.
-- **`/api/translate_audio/`:** Translate audio to text.
-- **`/api/fetch_and_store_hospitals/`:** Fetch and store hospital data from SERP API.
-
-### Usage
-
-The APIs can be accessed using any HTTP client, such as Postman or curl.
-
-**Example:**
-curl -X POST -H "Content-Type: application/json" -d '{"query": "What is the best hospital in New York City?"}' http://localhost:8000/api/hospitals_suggestions_openai/
-
-
+Each section is designed to facilitate user interaction and provide valuable health-related information, leveraging AI to enhance the user experience.

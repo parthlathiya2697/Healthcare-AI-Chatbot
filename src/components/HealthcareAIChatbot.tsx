@@ -116,6 +116,7 @@ export default function HealthcareAIChatbot() {
     })
       .then(response => {
         const newDoctors = response.data.doctors;
+        console.log("New doctors: ", newDoctors)
         setDoctors(prev => {
           const existingIds = new Set(prev.map(doctor => doctor.id));
           const uniqueNewDoctors = newDoctors.filter(doctor => !existingIds.has(doctor.id));
@@ -460,6 +461,19 @@ export default function HealthcareAIChatbot() {
   };
 
 
+  const sortedHospitals = [...hospitals].sort((a, b) => {
+    const order = sortOrder === 'asc' ? 1 : -1
+    if (hospitalSort === 'distance') return (a.distance - b.distance) * order
+    return (b[hospitalSort] - a[hospitalSort]) * order
+  })
+
+
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+  }
+
+
+
   // Initialization and data fetching
   useEffect(() => {
     loadMoreHospitals();
@@ -520,7 +534,7 @@ export default function HealthcareAIChatbot() {
   }, [hospitals, isLoadingHospitals, isLoadingDoctors]);
 
   useEffect(() => {
-    if (doctorPage <= totalDoctorPages) {
+    if (hospitals.length != 0 && doctorPage <= totalDoctorPages) {
       setIsLoadingDoctors(true);
       fetchDoctors(doctorPage);
     }
@@ -587,6 +601,7 @@ export default function HealthcareAIChatbot() {
       })
         .then(response => {
           const newDoctors = response.data.doctors;
+          console.log("New doctors loadMoreDoctors: ", newDoctors)
           setDoctors(prev => {
             // Filter out duplicates based on doctor.id
             const existingIds = new Set(prev.map(doctor => doctor.id));
@@ -763,9 +778,9 @@ export default function HealthcareAIChatbot() {
                       <CircularProgress />
                     </div>
                   ) : (
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Nearby Hospitals</CardTitle>
+                    <div>
+                      <div className="flex flex-row items-center justify-between">
+                        <div>Nearby Hospitals</div>
                         <div className="flex items-center">
                           <Select value={hospitalSort} onValueChange={setHospitalSort}>
                             <SelectTrigger className="w-[180px]">
@@ -779,14 +794,20 @@ export default function HealthcareAIChatbot() {
                               <SelectItem value="treatment_score">Treatment Score</SelectItem>
                             </SelectContent>
                           </Select>
+                          <hr></hr>
+                          <div className='sortclass'>
+                            <Button onClick={toggleSortOrder} size="icon" variant="ghost" className="ml-2">
+                              {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </div>
-                      </CardHeader>
+                      </div>
                       <CardContent>
                         <ul className="space-y-4">
-                          {hospitals.map(hospital => (
+                          {sortedHospitals.map(hospital => (
                             <li key={hospital.id} className="flex items-start space-x-4 p-4 rounded-lg hover:bg-gray-100">
                               <div className={`w-3 h-3 rounded-full mt-1 ${hospital.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
-                              <img src={hospital.thumbnail} alt={hospital.name} className="w-24 h-16 object-cover rounded" />
+                              <img src={hospital.image} alt={hospital.name} className="w-24 h-16 object-cover rounded" />
                               <div className="flex-grow">
                                 <h3 className="font-semibold">{hospital.name}</h3>
                                 <p className="text-sm text-muted-foreground">{hospital.address}</p>
@@ -833,7 +854,7 @@ export default function HealthcareAIChatbot() {
                         </form>
 
                       </CardFooter>
-                    </Card>
+                    </div>
                   )}
                   {hospitalMessages.length > 0 && (
                     <div className="h-[400px] w-full rounded-md border p-4 overflow-y-auto mt-4" ref={hospitalScrollRef}>
@@ -998,7 +1019,6 @@ export default function HealthcareAIChatbot() {
         onAudioRecorded={handleAudioRecorded}
         onTextRecognized={handleTextRecognized} // Pass the handler for recognized text
       />
-      {console.log("showPopup: ", showPopup)}
       {showPopup && (
         <div className="fixed bottom-0 left-0 right-0 bg-red-500 text-white p-4 z-50 flex flex-col items-center justify-center vignette-effect">
           <span>Number of Demo Trials Expired</span> [{requestCount}/{maxRequestCount}]
