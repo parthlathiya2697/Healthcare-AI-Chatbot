@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Healthcare Frontend
 
-## Getting Started
+This repository contains the frontend for a healthcare application. It is built using React and provides a user interface for interacting with healthcare data and services.
 
-First, run the development server:
+### Getting Started
 
+1. **Clone the repository:**
+
+2. **Install dependencies:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Start the development server:**
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application will be running at `http://localhost:3000/`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Project Flow
 
-## Learn More
+The healthcare application frontend is designed to provide users with an intuitive interface to manage and inquire about their health-related concerns. Here's how the different sections of the application work:
 
-To learn more about Next.js, take a look at the following resources:
+- **Main Chat Section:**
+  - Users can chat about their health problems.
+  - The application provides real-time responses and suggestions.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **First Aid Section:**
+  - Updates itself based on the user's chat in the main section.
+  - Provides immediate first aid advice and tips relevant to the user's health concerns.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Hospitals Section:**
+  - Displays nearby hospitals based on the user's location.
+  - Users can inquire about hospital facilities, services, and more.
 
-## Deploy on Vercel
+- **Doctors Section:**
+  - Contains a list of doctors from the displayed hospitals.
+  - Users can chat about available doctors, their specialties, and working experience.
+  - Provides insights into which hospitals have the most success rates by analyzing hospital data with AI.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Each section is designed to facilitate user interaction and provide valuable health-related information, leveraging AI to enhance the user experience.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Components
+
+- **HealthcareAIChatbot.tsx:** The main component that handles user interactions and displays chat messages, first aid tips, hospital information, and doctor details.
+- **AudioDialog, CameraPanel, ImageModal, VideoDialog, VideoModal, MediaModal:** Components for handling media inputs and displaying media content.
+- **RequestCountDisplay:** Displays the number of requests made by the user.
+
+### Technologies Used
+
+- **React:** For building the user interface.
+- **Axios:** For making HTTP requests to the backend.
+- **Material-UI:** For UI components and styling.
+- **Lucide-React:** For icons.
+- **React-Markdown:** For rendering markdown content.

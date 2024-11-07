@@ -1,4 +1,3 @@
-import PyPDF2
 import os, json
 import logging
 from django.views.decorators.csrf import csrf_exempt
@@ -6,15 +5,12 @@ from django.views.decorators.http import require_POST
 from openai import OpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
-# from langchain.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 import requests
-from bs4 import BeautifulSoup
-import re
 
 import base64
 import uuid
@@ -37,7 +33,7 @@ def get_treatment_score(hospital):
 
 def create_vector_store():
     # Create a vector store on server startup
-    pdf_folder = "./health_dataset"  # Replace with your actual PDF folder path
+    pdf_folder = "./backend/health_dataset"  # Replace with your actual PDF folder path
     pdf_files = [os.path.join(pdf_folder, f) for f in os.listdir(pdf_folder) if f.endswith(".pdf")]
 
     # Load and split PDF documents
