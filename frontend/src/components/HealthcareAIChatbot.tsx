@@ -656,7 +656,6 @@ export default function HealthcareAIChatbot() {
     <>
       <Card className="w-full mainC">
         <RequestCountDisplay requestCount={requestCount} setRequestCount={setRequestCount} />
-
         <CardHeader>
           <CardTitle>AI Health Assistant</CardTitle>
           <CardDescription>Get first aid advice, find nearby hospitals, and connect with doctors</CardDescription>

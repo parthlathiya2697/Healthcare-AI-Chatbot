@@ -1,63 +1,89 @@
-import os, json
+import os
+import json
 import logging
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from openai import OpenAI
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from django.db.models import Q
-
-logger = logging.getLogger(__name__)
-import requests
-
 import base64
 import uuid
-import soundfile as sf
-import io
+import requests
 from django.http import JsonResponse
-from .models import Hospital, Doctor
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
+from django.db.models import Q, F, FloatField
+from django.db.models.functions import Sqrt
+from rest_framework import status
+from openai import OpenAI
 import google.generativeai as genai
+from .models import Hospital, Doctor
 from healthcare_backend import settings
+from backend.healthcare.utils import create_vector_store, convert_to_wav
 
+logger = logging.getLogger(__name__)
 
-import random
-def get_staff_behavior(hospital):
-    # Your logic to extract staff behavior score
-    return 1
-
-def get_treatment_score(hospital):
-    # Your logic to extract treatment score
-    return 1
-
-def create_vector_store():
-    # Create a vector store on server startup
-    pdf_folder = "./backend/health_dataset"  # Replace with your actual PDF folder path
-    pdf_files = [os.path.join(pdf_folder, f) for f in os.listdir(pdf_folder) if f.endswith(".pdf")]
-
-    # Load and split PDF documents
-    loader = PyPDFLoader
-    documents = []
-    for pdf_file in pdf_files:
-        # Use the file path instead of the file object
-        with open(pdf_file, 'rb') as f:
-            loader = PyPDFLoader(pdf_file)  # Pass the file path here
-            documents.extend(loader.load())
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    texts = text_splitter.create_documents([doc.page_content for doc in documents])  # Extract page_content
-
-    # Create a vector store
-    embeddings = OpenAIEmbeddings()
-    global vector_store
-    vector_store = FAISS.from_documents(texts, embeddings)
 
 # Call the function to create the vector store on server startup
-create_vector_store()
+vector_store = create_vector_store()
     
 
-from rest_framework.response import Response
+@csrf_exempt
+def hospital_list(request):
+    try:
+        data = json.loads(request.body)
+        user_longitude = data.get('longitude', None)
+        user_latitude = data.get('latitude', None)
+
+        if user_longitude is None or user_latitude is None:
+            return JsonResponse({'error': 'User location not provided'}, status=400)
+
+        # Calculate the approximate distance using the Pythagorean theorem
+        hospitals = Hospital.objects.annotate(
+            proximity=Sqrt(
+                (F('longitude') - user_longitude) ** 2 + (F('latitude') - user_latitude) ** 2,
+                output_field=FloatField()
+            )
+        ).order_by('proximity')
+
+        paginator = Paginator(hospitals, 10)  # Show 10 hospitals per page
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        hospitals_data = list(page_obj.object_list.values())
+        return JsonResponse({
+            'hospitals': hospitals_data,
+            'page': page_obj.number,
+            'total_pages': paginator.num_pages
+        }, safe=False)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+
+@csrf_exempt
+def doctor_list(request):
+    # Parse JSON body data
+    try:
+        data = json.loads(request.body)
+        hospital_names = data.get('hospital_names', [])
+        hospital_locations = data.get('hospital_locations', [])
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    # Filter doctors based on hospital names and locations
+    query = Q()
+    for name, location in zip(hospital_names, hospital_locations):
+        query |= Q(hospital_name=name)
+
+    doctors = Doctor.objects.filter(query)
+    paginator = Paginator(doctors, 10)  # Show 10 doctors per page
+
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    doctors_data = list(page_obj.object_list.values())
+    return JsonResponse({
+        'doctors': doctors_data,
+        'page': page_obj.number,
+        'total_pages': paginator.num_pages
+    }, safe=False)
+
 
 @csrf_exempt
 def chat_openai(request):
@@ -152,10 +178,6 @@ def chat_openai(request):
     return JsonResponse({'response': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
-
-# from langchain.document_loaders import PyPDFLoader
-from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 @csrf_exempt
 def chat_gemini(request):
 
@@ -227,7 +249,6 @@ def chat_gemini(request):
     settings.request_count += 1
 
     return JsonResponse({'response': response})
-
 
 
 @csrf_exempt
@@ -350,51 +371,6 @@ def doctors_suggestions_openai(request):
     return JsonResponse({'suggestion': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
 
-
-
-from django.core.paginator import Paginator
-from django.http import JsonResponse
-from django.db.models import F
-from django.db.models import F, FloatField
-from django.db.models.functions import Sqrt
-from django.db.models import F, FloatField
-from django.db.models.functions import Sqrt
-from django.core.paginator import Paginator
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-
-@csrf_exempt
-def hospital_list(request):
-    try:
-        data = json.loads(request.body)
-        user_longitude = data.get('longitude', None)
-        user_latitude = data.get('latitude', None)
-
-        if user_longitude is None or user_latitude is None:
-            return JsonResponse({'error': 'User location not provided'}, status=400)
-
-        # Calculate the approximate distance using the Pythagorean theorem
-        hospitals = Hospital.objects.annotate(
-            proximity=Sqrt(
-                (F('longitude') - user_longitude) ** 2 + (F('latitude') - user_latitude) ** 2,
-                output_field=FloatField()
-            )
-        ).order_by('proximity')
-
-        paginator = Paginator(hospitals, 10)  # Show 10 hospitals per page
-        page_number = request.GET.get('page', 1)
-        page_obj = paginator.get_page(page_number)
-
-        hospitals_data = list(page_obj.object_list.values())
-        return JsonResponse({
-            'hospitals': hospitals_data,
-            'page': page_obj.number,
-            'total_pages': paginator.num_pages
-        }, safe=False)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-
 @csrf_exempt
 def fetch_and_store_hospitals(request):
     if request.method == 'POST':
@@ -432,45 +408,7 @@ def fetch_and_store_hospitals(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
 
 
-@csrf_exempt
-def doctor_list(request):
-    # Parse JSON body data
-    try:
-        data = json.loads(request.body)
-        hospital_names = data.get('hospital_names', [])
-        hospital_locations = data.get('hospital_locations', [])
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    # Filter doctors based on hospital names and locations
-    query = Q()
-    for name, location in zip(hospital_names, hospital_locations):
-        query |= Q(hospital_name=name)
-
-    doctors = Doctor.objects.filter(query)
-    paginator = Paginator(doctors, 10)  # Show 10 doctors per page
-
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-
-    doctors_data = list(page_obj.object_list.values())
-    return JsonResponse({
-        'doctors': doctors_data,
-        'page': page_obj.number,
-        'total_pages': paginator.num_pages
-    }, safe=False)
-
-
-def convert_to_wav(input_audio_file):
-    # Read the audio file using audioread and soundfile
-    with io.BytesIO() as buffer:
-        # Open the input audio file with soundfile
-        with sf.SoundFile(input_audio_file) as file:
-            # Write audio data to a WAV buffer
-            with sf.SoundFile(buffer, mode='w', samplerate=file.samplerate, channels=file.channels, format='WAV') as output:
-                output.write(file.read(dtype='float32'))
-        buffer.seek(0)
-        return buffer
 
 
 @require_POST
@@ -533,114 +471,6 @@ def translate_audio(request):
 
     return JsonResponse({'text': 'This is a sample response'})  # Todo: Remove this line and uncomment the above line
 
-
-# Import necessary modules
-import requests
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import Hospital  # Assuming you have a Hospital model
-
-def extract_doctor_info(text) : 
-
-    print(f'\nextract_doctor_info')
-
-    genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    prompt = f"""
-                Please provide your response below (output in list of JSON like [dict <doctor info>, dict >doctor2 info> ,...]. Do not inlude markup language in the response):
-                Needed info: name, specialty, rating, availability(dict of hours like [6,7,8,9]), phone_number
-                Input: {text}
-                """
-    response = model.generate_content(prompt)
-    response = response.text.replace("```json","").replace("```","").strip()
-    response = json.loads(response)
-    return response
-
-
-def fetch_doctors(hospital_name, location):
-
-    print(f'\nfetch_doctors')
-
-    # from serpapi import GoogleSearch
-    query = f"{hospital_name} doctors {location}"
-
-    # First, perform a search to get a list of doctors
-    params = {
-        "engine": "google",
-        "q": query,
-        "api_key": os.environ['SERP_API_KEY'],
-        "type": "search",
-    }
-
-    # Use requests to get the results
-    print(f'Doing google serp')
-    response = requests.get("https://serpapi.com/search", params=params)
-    results = response.json()
-    # with open(f'results_{query}.json', 'w') as f:
-    #     json.dump(results, f)
-    # with open("results_Intermountain Medical Center doctors surat.json") as f:
-    #     results = json.load(f)
-    
-    doctors = []
-
-    if 'organic_results' in results:
-        organic_results = results['organic_results']
-        parsed_organic_results = [ 
-                {
-                    'title' : result.get('title', ''),
-                    'snippet' : result.get('snippet', ''),
-                }
-                for result in organic_results
-            ]
-        doctors_info_list = extract_doctor_info(str(parsed_organic_results))
-        for doctors_info in doctors_info_list:
-            doctor = {}
-            doctor['name'] = doctors_info.get('name', '') if doctors_info.get('name', '') else ''
-            doctor['specialty'] = doctors_info.get('specialty', '') if doctors_info.get('specialty', '') else ''
-            doctor['rating'] = float(doctors_info.get('rating', 0.0)) if doctors_info.get('rating', 0.0) else 0.0
-            doctor['availability'] = doctors_info.get('availability', {}) if doctors_info.get('availability', {}) else {}
-            doctor['phone'] = doctors_info.get('phone_number', '') if doctors_info.get('phone_number', '') else ''
-
-            # Analyze reviews for sentiment, behavior, and expertise
-            reviews = doctors_info.get('reviews', [])
-            sentiments = []
-            behavior_scores = []
-            expertise_scores = []
-
-            for review in reviews:
-                text = review.get('snippet', '')
-                rating = review.get('rating', 0)
-
-                # Placeholder sentiment analysis based on rating
-                if rating >= 4:
-                    sentiments.append(1)
-                elif rating <= 2:
-                    sentiments.append(-1)
-                else:
-                    sentiments.append(0)
-
-                # Placeholder for behavior and expertise scores
-                behavior_scores.append(rating)
-                expertise_scores.append(rating)
-
-            if sentiments:
-                avg_sentiment = sum(sentiments) / len(sentiments)
-                doctor['feedback_sentiment'] = (
-                    'positive' if avg_sentiment > 0 else 'negative' if avg_sentiment < 0 else 'neutral'
-                )
-                doctor['behavior'] = sum(behavior_scores) / len(behavior_scores)
-                doctor['expertise'] = sum(expertise_scores) / len(expertise_scores)
-            else:
-                doctor['feedback_sentiment'] = ''
-                doctor['behavior'] = 0.0
-                doctor['expertise'] = 0.0
-
-            doctors.append(doctor)
-
-    return doctors
-
-
-from rest_framework import status
 
 @csrf_exempt
 def request_count_view(request):
