@@ -312,7 +312,7 @@ export default function HealthcareAIChatbot() {
 
     // Add user profile data to the reference content
     const userProfile = formatUserProfile();
-    reference_content = userProfile + reference_content;
+    reference_content = userProfile + "\nReference Content: \n" + reference_content;
 
 
     console.log("Selected reference content: ", reference_content)
