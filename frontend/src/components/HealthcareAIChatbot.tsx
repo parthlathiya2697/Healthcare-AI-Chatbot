@@ -918,8 +918,8 @@ export default function HealthcareAIChatbot() {
                   <FontAwesomeIcon icon={faCamera} className="w-4 h-4" />
                   <span className="sr-only">Capture Image</span>
                 </Button>
-                <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className={`ml-2`}>
-                  <Mic className={`w-4 h-4`} />
+                <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className="ml-2">
+                  <Mic className="w-4 h-4" />
                   <span className="sr-only">Record audio</span>
                 </Button>
                 <Button type="button" onClick={() => setIsVideoDialogOpen(true)} className="ml-2">
@@ -955,8 +955,8 @@ export default function HealthcareAIChatbot() {
                       onChange={(e) => setFirstAidInput(e.target.value)}
                       className="flex-grow mr-2"
                     />)}
-                    <Button type="button" onClick={() => handleAudioInputForTab('firstAid')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
-                      <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                    <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className="ml-2">
+                      <Mic className="w-4 h-4" />
                       <span className="sr-only">Record audio</span>
                     </Button>
                     <Button type="submit">Ask</Button>
@@ -1055,8 +1055,8 @@ export default function HealthcareAIChatbot() {
                             className="flex-grow mr-2"
                           />)}
 
-                          <Button type="button" onClick={() => handleAudioInputForTab('hospitals')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
-                            <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                          <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className="ml-2">
+                            <Mic className="w-4 h-4" />
                             <span className="sr-only">Record audio</span>
                           </Button>
                           <Button type="submit">Ask</Button>
@@ -1185,8 +1185,8 @@ export default function HealthcareAIChatbot() {
                         onChange={(e) => setDoctorInput(e.target.value)}
                         className="flex-grow mr-2"
                       />)}
-                      <Button type="button" onClick={() => handleAudioInputForTab('doctors')} className={`ml-2 ${isRecording ? 'animate-pulse' : ''}`}>
-                        <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : ''}`} />
+                      <Button type="button" onClick={() => setIsAudioDialogOpen(true)} className="ml-2">
+                        <Mic className="w-4 h-4" />
                         <span className="sr-only">Record audio</span>
                       </Button>
                       <Button type="submit">Ask</Button>
@@ -1253,6 +1253,7 @@ export default function HealthcareAIChatbot() {
         onAudioRecorded={handleAudioRecorded}
         onTextRecognized={handleTextRecognized} // Pass the handler for recognized text
       />
+
       {showPopup && (
         <div className="fixed bottom-0 left-0 right-0 bg-red-500 text-white p-4 z-50 flex flex-col items-center justify-center vignette-effect">
           <span>Number of Demo Trials Expired</span> [{requestCount}/{maxRequestCount}]
