@@ -1,5 +1,4 @@
 "use client"
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { CircularProgress } from '@mui/material';
@@ -25,8 +24,7 @@ import VideoDialog from './VideoDialog';
 import VideoModal from './VideoModal';
 import MediaModal from './MediaModal';
 import { faUser } from '@fortawesome/free-solid-svg-icons'; // Import the user icon
-import { Dialog, DialogContent, DialogTitle } from '@mui/material'; // Import Dialog components for material view
-
+import { Dialog, DialogContent, LinearProgress, DialogTitle } from '@mui/material'; // Import Dialog components for material view
 
 export default function HealthcareAIChatbot() {
 
@@ -586,6 +584,29 @@ export default function HealthcareAIChatbot() {
     scrollToBottom(chatScrollRef);
   }, [chatMessages]);
 
+  const [isHintDialogOpen, setIsHintDialogOpen] = useState(true);
+  const [progress, setProgress] = useState(0); // State to track progress
+  const profileIconRef = useRef<HTMLDivElement | null>(null);
+
+
+  useEffect(() => {
+    if (isHintDialogOpen) {
+      const timer = setInterval(() => {
+        setProgress((prevProgress) => (prevProgress >= 100 ? 100 : prevProgress + 2));
+      }, 100); // Update progress every 100ms
+
+      const closeTimer = setTimeout(() => {
+        setIsHintDialogOpen(false);
+      }, 5000); // Close the dialog after 5 seconds
+
+      return () => {
+        clearInterval(timer);
+        clearTimeout(closeTimer);
+      };
+    }
+  }, [isHintDialogOpen]);
+
+
   useEffect(() => {
     scrollToBottom(firstAidScrollRef);
   }, [firstAidMessages]);
@@ -709,16 +730,6 @@ export default function HealthcareAIChatbot() {
 
   return (
     <>
-      {/* Profile Icon */}
-      <div className="absolute top-4 right-4">
-        <Button
-          onClick={handleProfileIconClick}
-          className="bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition duration-300"
-          style={{ borderRadius: '100px', boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 10px 3px', width: '40px', height: '40px' }}
-        >
-          <FontAwesomeIcon icon={faUser} className="w-6 h-6 text-gray-700" />
-        </Button>
-      </div>
 
       {/* Profile Dialog */}
       <Dialog open={isProfileDialogOpen} onClose={handleProfileDialogClose}>
@@ -1251,6 +1262,56 @@ export default function HealthcareAIChatbot() {
           </button>
         </div>
       )}
+
+      {/* Profile Icon and Hint Dialog Container */}
+      <div ref={profileIconRef} className="absolute top-4 right-4">
+        <Button
+          onClick={handleProfileIconClick}
+          style={{ borderRadius: '100px', boxShadow: 'rgba(0, 0, 0, 0.1) 0px 0px 10px 3px', width: '40px', height: '40px' }}
+          className={`bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition duration-300 ${isHintDialogOpen ? 'highlight' : ''}`}
+        >
+          <FontAwesomeIcon icon={faUser} className="w-6 h-6 text-gray-700" />
+        </Button>
+
+        {/* Hint Dialog */}
+        <Dialog
+          open={isHintDialogOpen && (!userName || !userGender || !userBirthdate || !userSymptoms || !userDescription)}
+          onClose={() => setIsHintDialogOpen(false)}
+          PaperProps={{
+            style: {
+              position: 'absolute',
+              top: '60px', // Position the dialog below the profile icon
+              right: '-10px', // Align with the icon's right edge
+              width: '250px',
+              overflow: 'visible', // Allow the pseudo-element to be visible outside the dialog
+              backgroundColor: 'aliceblue',
+              borderRadius: '10px',
+              padding: '10px',
+            },
+          }}
+        >
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '20px', // Adjust this value to align the arrow with the profile icon
+                width: '0',
+                height: '0',
+                borderLeft: '10px solid transparent',
+                borderRight: '10px solid transparent',
+                borderTop: '10px solid aliceblue', // Match the dialog's background color
+              }}
+            />
+            <DialogContent>
+              <p style={{ marginBottom: '10px' }}>
+                Click the user icon to enter your personal details. This helps the AI Doctor provide better diagnoses.
+              </p>
+              <LinearProgress variant="determinate" value={progress} style={{ transition: 'width 0.1s linear' }} />
+            </DialogContent>
+          </div>
+        </Dialog>
+      </div>
 
     </>
   );
