@@ -72,6 +72,11 @@ const AudioDialog: React.FC<AudioDialogProps> = ({
         };
     }, [isOpen]);
 
+
+  if (typeof window == 'undefined') {
+    return;
+    }
+    
     const SpeechRecognition =
         window.SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = SpeechRecognition ? new SpeechRecognition() : null;

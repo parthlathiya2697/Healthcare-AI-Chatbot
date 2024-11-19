@@ -223,6 +223,12 @@ export default function HealthcareAIChatbot() {
 
   const handleVideoThumbnailClick = () => {
     if (videoBlob) {
+
+
+  if (typeof window == 'undefined') {
+    return;
+    }
+    
       // Use window.URL.createObjectURL instead of URL.createObjectURL
       const videoUrl = window.URL.createObjectURL(videoBlob);
       setIsVideoModalOpen(true);
@@ -426,6 +432,10 @@ export default function HealthcareAIChatbot() {
       return;
     }
 
+    
+  if (typeof window == 'undefined') {
+    return;
+    }
     recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognitionRef.current.lang = 'en-US';
     recognitionRef.current.interimResults = false;
