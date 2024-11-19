@@ -53,7 +53,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           cd Healthcare-AI-Chatbot
           git pull origin production
-          export PYTHONPATH=.
           cd backend
           source venv/bin/activate
           pip install -r requirements.txt
@@ -64,5 +63,5 @@ jobs:
           fi
           # Start the server in the background and log output
           cd ..
-          nohup python backend/manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
+          nohup export PYTHONPATH=. && python backend/manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
           EOF
