@@ -117,7 +117,7 @@ export default function HealthcareAIChatbot() {
   const fetchHospitals = useCallback((page: number) => {
     if (userLocation.latitude && userLocation.longitude) {
       setIsLoadingHospitals(true);
-      axios.post('http://localhost:8000/api/hospitals/', {
+      axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hospitals/`, {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
         page: page
@@ -147,7 +147,7 @@ export default function HealthcareAIChatbot() {
 
 
   const fetchDoctors = (page: number) => {
-    axios.post(`http://localhost:8000/api/doctors/?page=${page}`, {
+    axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/doctors/?page=${page}`, {
       reference_content: doctorReference,
       hospital_names: hospitals.map(hospital => hospital.name),
       hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
@@ -228,7 +228,7 @@ export default function HealthcareAIChatbot() {
   if (typeof window == 'undefined') {
     return;
     }
-    
+
       // Use window.URL.createObjectURL instead of URL.createObjectURL
       const videoUrl = window.URL.createObjectURL(videoBlob);
       setIsVideoModalOpen(true);
@@ -353,7 +353,7 @@ export default function HealthcareAIChatbot() {
       const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
 
       // Call the appropriate API endpoint based on the tab
-      const apiEndpoint = `http://localhost:8000/api/chat_gemini/`;
+      const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat_gemini/`;
 
       try {
         const response = await axios.post(apiEndpoint, {
@@ -391,7 +391,7 @@ export default function HealthcareAIChatbot() {
         // Now get hospitals and doctors
         if (tabContent === 'chat') {
           if (userLocation.latitude && userLocation.longitude) {
-            const hospitalResponse = await axios.post('http://localhost:8000/api/hospitals/', {
+            const hospitalResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hospitals/`, {
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
               page: hospitalPage // Include the current page in the request
@@ -577,7 +577,7 @@ export default function HealthcareAIChatbot() {
 
     const fetchRequestData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/requestCount/`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/requestCount/`);
         const data = await response.json();
         setRequestCount(data.request_count);
         setMaxRequestCount(data.max_request_count);
@@ -682,7 +682,7 @@ export default function HealthcareAIChatbot() {
 
       if (hospitalPage <= totalHospitalPages) {
         setIsLoadingHospitals(true);
-        axios.post('http://localhost:8000/api/hospitals/', {
+        axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/hospitals/`, {
           latitude: userLocation.latitude,
           longitude: userLocation.longitude,
           page: hospitalPage // Include the current page in the request
@@ -711,7 +711,7 @@ export default function HealthcareAIChatbot() {
   const loadMoreDoctors = useCallback(() => {
     if (doctorPage <= totalDoctorPages) {
       setIsLoadingDoctors(true);
-      axios.post(`http://localhost:8000/api/doctors/?page=${doctorPage}`, {
+      axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/doctors/?page=${doctorPage}`, {
         hospital_names: hospitals.map(hospital => hospital.name),
         hospital_locations: hospitals.map(hospital => ({ longitude: hospital.longitude, latitude: hospital.latitude }))
       })

@@ -203,7 +203,7 @@ const AudioDialog: React.FC<AudioDialogProps> = ({
             const formData = new FormData();
             formData.append('audio_file', audioFile);
 
-            fetch('http://localhost:8000/api/translate_audio/', {
+            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/translate_audio/`, {
                 method: 'POST',
                 body: formData,
             })

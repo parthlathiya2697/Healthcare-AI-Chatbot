@@ -14,7 +14,7 @@ export default function RequestCountDisplay({ requestCount, setRequestCount }: R
   useEffect(() => {
     const fetchRequestData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/requestCount/`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/requestCount/`);
         const data = await response.json();
         setRequestCount((data.requestCount ?? 0) + 1);
         setMaxRequestCount(data.max_request_count); // Assuming the API returns this value
