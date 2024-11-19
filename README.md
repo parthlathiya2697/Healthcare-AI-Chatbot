@@ -34,6 +34,7 @@ This repository contains both the frontend and backend for a healthcare applicat
 
 2. **Create a virtual environment:**
 ```bash
+sudo apt install python3.12-venv
 python3 -m venv venv
 ```
 
@@ -44,6 +45,7 @@ source venv/bin/activate
 
 4. **Install dependencies:**
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
@@ -57,13 +59,15 @@ pip install -r requirements.txt
 
 6. **Run database migrations:**
 ```bash
-python manage.py makemigrations
-python manage.py migrate
+cd ..
+export PYTHONPATH=.
+python backend/manage.py makemigrations
+python backend/manage.py migrate
 ```
 
 7. **Start the development server:**
 ```bash
-python manage.py runserver
+python backend/manage.py runserver
 ```
 
 The server will be running at `http://localhost:8000/`.
