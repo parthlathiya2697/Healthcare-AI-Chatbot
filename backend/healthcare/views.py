@@ -394,8 +394,8 @@ def fetch_and_store_hospitals(request):
                 hospitals = results['local_results']
                 for hospital in hospitals:
                     Hospital.objects.create(
-                        name=hospital.get('title', 'Unknown'),
-                        address=hospital.get('address', 'Unknown'),
+                        name=hospital.get('title', ''),
+                        address=hospital.get('address', ''),
                         longitude=hospital.get('gps_coordinates', {}).get('longitude', 0.0),
                         latitude=hospital.get('gps_coordinates', {}).get('latitude', 0.0),
                         gps_coordinates=hospital.get('gps_coordinates', {}),
@@ -404,14 +404,14 @@ def fetch_and_store_hospitals(request):
                         reviews_link=hospital.get('reviews_link', ''),
                         hospital_type=hospital.get('type', 'General'),
                         is_open=hospital.get('is_open', False),
-                        comfort=hospital.get('comfort', 'Unknown'),
-                        hours=hospital.get('hours', 'Unknown'),
-                        operating_hours=hospital.get('operating_hours', 'Unknown'),
-                        phone=hospital.get('phone', 'Unknown'),
+                        comfort=hospital.get('comfort', 0.0),
+                        hours=hospital.get('hours', ''),
+                        operating_hours=hospital.get('operating_hours', {}),
+                        phone=hospital.get('phone', ''),
                         website=hospital.get('website', ''),
                         user_review=hospital.get('user_review', ''),
                         thumbnail=hospital.get('thumbnail', ''),
-                        staff_behavior=hospital.get('staff_behavior', 'Unknown'),
+                        staff_behavior=hospital.get('staff_behavior', 0.0),
                         treatment_score=hospital.get('treatment_score', 0.0),
                         distance=hospital.get('distance', 0.0),
                         women_friendly=hospital.get('women_friendly', False)
