@@ -53,6 +53,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           cd Healthcare-AI-Chatbot
           git pull origin production
+          export PYTHONPATH=.
           cd backend
           source venv/bin/activate
           pip install -r requirements.txt
