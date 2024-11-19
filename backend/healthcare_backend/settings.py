@@ -142,6 +142,7 @@ DATABASES = {
 CORS_ALLOWED_ORIGINS = [
     "http://13.234.232.51:3000",  # Your Next.js frontend URL
     "http://13.234.232.51:80",  # Your Next.js frontend URL
+    "http://13.234.232.51:4000"
 ]
 
 APPEND_SLASH = False
