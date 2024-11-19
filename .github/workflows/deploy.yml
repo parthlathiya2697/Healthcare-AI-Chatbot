@@ -61,5 +61,5 @@ jobs:
             pkill -f "backend/manage.py runserver"
           fi
           # Start the server in the background and log output
-          nohup export PYTHONPATH=. && python backend/manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
+          nohup sh -c 'export PYTHONPATH=. && python backend/manage.py runserver 0.0.0.0:8000' > backend.log 2>&1 &
           EOF
