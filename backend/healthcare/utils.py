@@ -2,6 +2,7 @@ import os
 import io
 import requests
 import soundfile as sf
+import google.generativeai as genai
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
