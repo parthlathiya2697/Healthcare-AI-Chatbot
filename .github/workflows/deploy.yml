@@ -25,12 +25,12 @@ jobs:
           git pull origin production
           cd frontend
           npm install
-          npm build
+          npm run build
           # Check if the app is running and stop it if it is
-          if pm2 list | grep -q "healthcare-ai-chatbot-app"; then
-            pm2 stop healthcare-ai-chatbot-app
+          if pm2 list | grep -q "aihealthcare-app"; then
+            pm2 stop aihealthcare-app
           fi
-          pm2 start npm --name "healthcare-ai-chatbot-app" -- run start -- -H 0.0.0.0 -p 4000
+          pm2 start npm --name "aihealthcare-app" -- run start -- -H 0.0.0.0 -p 4000
           pm2 save
           EOF
 
