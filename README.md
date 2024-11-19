@@ -96,3 +96,53 @@ The application will be running at `http://localhost:3000/`.
 ### Note
 
 This AI assistant is for informational purposes only. Always consult with a qualified healthcare professional for medical advice.
+
+
+Subdomain Configuration
+Open the configuration file for the subdomain:
+
+bash
+Copy code
+sudo nano /etc/nginx/sites-available/subdomain
+Add the following configuration:
+
+nginx
+Copy code
+server {
+    listen 80;
+    server_name subdomain.parthlathiya.wiki;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    error_page 502 /502.html;
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+
+
+Step 3: Enable Configurations
+Create symbolic links to enable both configurations:
+
+bash
+Copy code
+sudo ln -s /etc/nginx/sites-available/Portfolio /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/subdomain /etc/nginx/sites-enabled/
+Test the Nginx configuration:
+
+bash
+Copy code
+sudo nginx -t
+Reload Nginx:
+
+bash
+Copy code
+sudo systemctl reload nginx
