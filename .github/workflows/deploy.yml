@@ -63,5 +63,6 @@ jobs:
             pkill -f "manage.py runserver"
           fi
           # Start the server in the background and log output
-          nohup python manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
+          cd ..
+          nohup python backend/manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
           EOF
