@@ -141,9 +141,12 @@ DATABASES = {
     }
 }
 
-CORS_ALLOWED_ORIGINS = [
-   os.environ['FRONTEND_URL']
-]
+# CORS_ALLOWED_ORIGINS = [
+#    os.environ['FRONTEND_URL']
+# ]
+CORS_ALLOW_ALL_ORIGINS = True
+
+
 
 APPEND_SLASH = False
 
