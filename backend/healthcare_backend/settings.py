@@ -142,7 +142,7 @@ DATABASES = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-   os.environ['API_BASE_URL']
+   os.environ['FRONTEND_URL']
 ]
 
 APPEND_SLASH = False
