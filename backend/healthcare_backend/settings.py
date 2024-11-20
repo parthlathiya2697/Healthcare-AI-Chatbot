@@ -18,6 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 from dotenv import load_dotenv
 load_dotenv()
+import os
 
 
 # Quick-start development settings - unsuitable for production
@@ -57,6 +58,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'healthcare_backend.urls'
@@ -140,12 +142,7 @@ DATABASES = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://13.234.232.51:3000",  # Your Next.js frontend URL
-    "http://13.234.232.51:80",  # Your Next.js frontend URL
-    "http://13.234.232.51:8000",  # Your Next.js frontend URL
-    "http://13.234.232.51:4000",
-    "https://aihealthcare.parthlathiya.wiki/",
-    "https://parthlathiya.wiki/"
+   os.environ['API_BASE_URL']
 ]
 
 APPEND_SLASH = False
