@@ -362,7 +362,7 @@ export default function HealthcareAIChatbot() {
       const videoBase64 = videoBlob ? await toBase64(videoBlob) : null;
 
       // Call the appropriate API endpoint based on the tab
-      const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat_gemini/`;
+      const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat_openai/`;
 
       try {
         const response = await axios.post(apiEndpoint, {
@@ -377,10 +377,12 @@ export default function HealthcareAIChatbot() {
           }
         });
 
+        console.log(`Received ${tabContent} response:`, response);
+
         const responseMessage = response.data.response;
         console.log(`Received ${tabContent} response:`, responseMessage);
         setMessages(prev => [...prev, { role: 'assistant', content: responseMessage.response }]);
-        setFirstAidReference((responseMessage.firstaid.length > 0 && responseMessage.firstaid) || '');
+        setFirstAidReference((responseMessage.firstaid) || '');
 
         // Clear the input and image after sending
         setInput('');
