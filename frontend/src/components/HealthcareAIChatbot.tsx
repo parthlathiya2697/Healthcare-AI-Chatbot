@@ -271,7 +271,15 @@ export default function HealthcareAIChatbot() {
 
 
   async function handleSendMessage(e: React.FormEvent, tabContent: string = '') {
+    
     e.preventDefault(); // Prevent default form submission behavior
+
+    if (videoBlob) {
+      // Add logic to show a dialog for failed message sending
+      alert('Video Feature Coming Soon: Message sending failed');
+      return;
+    }
+
     // return if request count exceeds the limit
     console.log("Handle send message from tab: ", tabContent)
     if (requestCount !== null && maxRequestCount !== null && requestCount >= maxRequestCount) {
@@ -339,6 +347,7 @@ export default function HealthcareAIChatbot() {
       newMessages.push({ role: 'user', content: '', image: base64Image });
     }
     if (videoBlob) {
+      // Add logic to show a dialog for failed message sending
       const videoBase64 = await toBase64(videoBlob);
       newMessages.push({ role: 'user', content: '', video: videoBase64 });
     }
