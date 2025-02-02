@@ -1,3 +1,4 @@
+import os
 import google.generativeai as genai
 from django.http import JsonResponse
 from rest_framework import status
@@ -41,7 +42,7 @@ def chat_gemini_(request, vector_store):
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     system_message = f"You are a helpful assistant. This is the refereence content: {reference_content}"
-    genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
+    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
     model = genai.GenerativeModel("gemini-1.5-flash")
     content = system_message
 

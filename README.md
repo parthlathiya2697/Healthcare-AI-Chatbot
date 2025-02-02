@@ -110,7 +110,7 @@ nginx
 Copy code
 server {
     listen 80;
-    server_name subdomain.parthlathiya.wiki;
+    server_name aihealthcare.parthlathiya.wiki;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -135,13 +135,15 @@ Create symbolic links to enable both configurations:
 bash
 Copy code
 sudo ln -s /etc/nginx/sites-available/Portfolio /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/subdomain /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/aihealthcare /etc/nginx/sites-enabled/
 Test the Nginx configuration:
 
 bash
 Copy code
 sudo nginx -t
 Reload Nginx:
+
+sudo certbot --nginx -d modern-farming.parthlathiya.wiki
 
 bash
 Copy code

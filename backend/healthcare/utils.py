@@ -74,7 +74,7 @@ def extract_doctor_info(text) :
 
     print(f'\nextract_doctor_info')
 
-    genai.configure(api_key='AIzaSyASEjuFeJICbV8E6LRhMgxzkNMwYkpfm7Y')
+    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
     model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = f"""
                 Please provide your response below (output in list of JSON like [dict <doctor info>, dict >doctor2 info> ,...]. Do not inlude markup language in the response):
