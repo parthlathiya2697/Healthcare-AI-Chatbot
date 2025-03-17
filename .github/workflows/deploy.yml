@@ -63,6 +63,6 @@ jobs:
           if pm2 list | grep -q "app-aihealthcareapi"; then
             pm2 stop app-aihealthcareapi
           fi
-          pm2 start python3 --name "app-aihealthcareapi" -- backend/manage.py runserver 0.0.0.0:4001
+          pm2 start python3 --name "app-aihealthcareapi" -- ./backend/manage.py runserver 0.0.0.0:4001
           pm2 save
           EOF
