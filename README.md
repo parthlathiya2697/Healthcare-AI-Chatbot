@@ -15,3 +15,4 @@
     pm2 start python3 --name "app-aihealthcareapi" -- ./backend/manage.py runserver 0.0.0.0:4001
     pm2 save
     EOF
+
