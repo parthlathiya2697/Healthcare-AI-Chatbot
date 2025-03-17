@@ -21,8 +21,8 @@ jobs:
       - name: Deploy Frontend to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          pwd && ls
           cd ~
+          pwd && ls
           cd AI-HealthCare
           git pull origin production
           cd frontend
@@ -52,18 +52,17 @@ jobs:
       - name: Deploy Backend to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          pwd && ls
           cd ~
+          pwd && ls
           cd AI-HealthCare
           git pull origin production
           source backend/venv/bin/activate
-          cd backend
           pip install -r backend/requirements.txt
           export PYTHONPATH=. && python backend/manage.py migrate
           # Check if the app is running and stop it if it is
-          if pm2 list | grep -q "app-aihealthcare"; then
-            pm2 stop app-aihealthcare
+          if pm2 list | grep -q "app-aihealthcareapi"; then
+            pm2 stop app-aihealthcareapi
           fi
-          pm2 start python --name "app-aihealthcare" -- backend/manage.py runserver 0.0.0.0:4001
+          pm2 start python --name "app-aihealthcareapi" -- backend/manage.py runserver 0.0.0.0:4001
           pm2 save
           EOF
