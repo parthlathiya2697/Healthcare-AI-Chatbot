@@ -21,6 +21,7 @@ jobs:
       - name: Deploy Frontend to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          pwd && ls
           cd ~
           cd AI-Healthcare
           git pull origin production
@@ -51,6 +52,7 @@ jobs:
       - name: Deploy Backend to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          pwd && ls
           cd ~
           cd AI-Healthcare
           git pull origin production
