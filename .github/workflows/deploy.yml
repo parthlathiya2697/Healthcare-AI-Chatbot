@@ -23,7 +23,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           pwd && ls
           cd ~
-          cd AI-Healthcare
+          cd AI-HealthCare
           git pull origin production
           cd frontend
           npm install
@@ -54,7 +54,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           pwd && ls
           cd ~
-          cd AI-Healthcare
+          cd AI-HealthCare
           git pull origin production
           source backend/venv/bin/activate
           cd backend
