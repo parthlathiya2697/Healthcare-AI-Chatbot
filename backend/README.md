@@ -13,6 +13,8 @@ This project implements a simple AI logic system using Django, Django REST Frame
   - `/api/steps-comparison/`: Identifies users whose step count this week is 50% less than the previous week.
 - **AI-Generated Responses**: Provides personalized advice using OpenAI's ChatGPT.
 
+
+
 ## Task Description
 Reference App Link: https://hapday.app
 

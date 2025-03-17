@@ -21,7 +21,7 @@ class SleepConditionView(APIView):
 
         one_week_ago = timezone.now().date() - timedelta(days=7)
 
-        for user in users:
+        for user in users[:1]:
             stats = AppleHealthStat.objects.filter(user=user, created_at__gte=one_week_ago)
             total_sleep = 0
             for stat in stats:
@@ -44,7 +44,7 @@ class StepsConditionView(APIView):
 
         today = timezone.now().date()
 
-        for user in users:
+        for user in users[:1]:
             stats = AppleHealthStat.objects.filter(user=user, created_at__date=today)
             total_steps = sum(stat.step_count or 0 for stat in stats)
             if total_steps >= 10000:
@@ -64,7 +64,7 @@ class StepsComparisonView(APIView):
         this_week_start = today - timedelta(days=today.weekday())
         last_week_start = this_week_start - timedelta(days=7)
 
-        for user in users:
+        for user in users[:1]:
             this_week_steps = AppleHealthStat.objects.filter(
                 user=user,
                 created_at__date__gte=this_week_start,
